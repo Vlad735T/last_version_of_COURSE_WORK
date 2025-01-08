@@ -10,7 +10,6 @@ import (
 )
 
 func HashPassword(password string) (string, error) {
-	// Генерация хэша
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
@@ -27,9 +26,11 @@ func INSERT_INTO_TABLES(db *sql.DB, users [][6]string) error {
 
 		_, err = db.Exec(`
 			INSERT INTO users (surname, name, middle_name, phone_number, email, hashed_password)
-			VALUES ($1, $2, $3, $4, $5, $6)`,
+			VALUES ($1, $2, $3, $4, $5, $6)
+			ON CONFLICT (phone_number) DO NOTHING`,
 			user[0], user[1], user[2], user[3], user[4], hashed_password,
 		)
+
 		if err != nil {
 			return err
 		}
@@ -38,6 +39,18 @@ func INSERT_INTO_TABLES(db *sql.DB, users [][6]string) error {
 }
 
 func INSERT_INTO_CARS(db *sql.DB, cars [][9]interface{}) error {
+	// Проверяем, есть ли данные в таблице cars
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM cars").Scan(&count)
+	if err != nil {
+		return fmt.Errorf("ошибка при проверке данных в таблице cars: %v", err)
+	}
+
+	if count > 0 {
+		fmt.Println("Данные в таблице cars уже существуют. Ничего не добавлено.")
+		return nil
+	}
+
 	for _, car := range cars {
 		_, err := db.Exec(`
 			INSERT INTO cars (brand, model, year, engine_volume, power, transmission, color, price, id_seller)
@@ -45,9 +58,11 @@ func INSERT_INTO_CARS(db *sql.DB, cars [][9]interface{}) error {
 			car[0], car[1], car[2], car[3], car[4], car[5], car[6], car[7], car[8],
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("ошибка при вставке данных в таблицу cars: %v", err)
 		}
 	}
+
+	fmt.Println("Данные успешно добавлены в таблицу cars!")
 	return nil
 }
 

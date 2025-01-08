@@ -23,7 +23,7 @@ func CheckPasswordHash(password, hash string) bool {
 
 func main() {
 
-	password := "koftyguhijn45ru6ty"
+	password := "12345"
 	Hashed_Password, err := HashPassword(password)
 	if err != nil {
 		fmt.Println("Ошибка хэширования:", err)

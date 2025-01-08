@@ -1,9 +1,12 @@
 DO $$
-BEGIN   
+BEGIN
+    -- Проверяем, существует ли база данных с именем 'car_dealer'
     IF NOT EXISTS (
         SELECT FROM pg_database WHERE datname = 'car_dealer'
     ) THEN
-        CREATE DATABASE car_dealer;
+        PERFORM dblink_exec('dbname=postgres', 'CREATE DATABASE car_dealer');
+    ELSE
+        RAISE NOTICE 'Database "car_dealer" already exists.';
     END IF;
 END $$;
 
@@ -15,7 +18,7 @@ BEGIN
         SELECT FROM pg_catalog.pg_roles
         WHERE rolname = 'car_dealer_user'
     ) THEN
-        CREATE ROLE car_dealer_user WITH LOGIN PASSWORD "!322@VTB";
+        CREATE ROLE car_dealer_user WITH LOGIN PASSWORD '!322@VTB';
         ALTER ROLE car_dealer_user WITH SUPERUSER CREATEROLE CREATEDB;
     END IF;
 END $$;
