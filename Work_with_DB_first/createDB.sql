@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS dblink;
+
 DO $$
 BEGIN
     -- Проверяем, существует ли база данных с именем 'car_dealer'

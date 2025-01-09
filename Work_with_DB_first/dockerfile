@@ -1,0 +1,39 @@
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+COPY Work_with_DB_first /app
+
+# Устанавливаем переменную окружения для подавления интерактивных запросов
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt update && apt install -y \
+    git \
+    libpq-dev \
+    golang-1.22 \
+    sudo \
+    curl \
+    gnupg \
+    locales \
+    lsb-release \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    # Добавляем ключ для PostgreSQL
+    && curl -sSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+    # Используем репозиторий для PostgreSQL 17 (для Ubuntu 22.04)
+    && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -c | awk '{print $2}')-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt update \
+    && apt install -y postgresql-17 \
+    # Устанавливаем локали
+    && locale-gen ru_RU.UTF-8 \
+    && update-locale LANG=ru_RU.UTF-8 \
+    # Запускаем PostgreSQL
+    && service postgresql start \
+    # Создаем базу данных
+    && sudo -u postgres psql < /app/createDB.sql 
+
+ENV PATH="/usr/lib/go-1.22/bin:$PATH"
+
+RUN go mod tidy && go build -o create_db hashed_and_insert_in_DB.go
+
+CMD service postgresql start && ./create_db && tail -f /dev/null

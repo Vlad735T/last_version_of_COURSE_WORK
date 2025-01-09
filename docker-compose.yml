@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  db:
+    build:
+      context: . 
+      dockerfile: Work_with_DB_first/dockerfile
+    container_name: db_with_info
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data  
+
+# Сохраняем данные PostgreSQL между перезапусками контейнера
+volumes:
+  db-data:
