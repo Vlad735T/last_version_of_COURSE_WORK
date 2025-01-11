@@ -1,25 +1,32 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>
-            Автомобили в Новосибирске
-        </title>
-        <script>
-            function showMessage(){
-                alert("Кнопка была нажата!");
-            }
-        </script>
-    </head>
-    <body>
-        <h1>
-            Добро пожаловать на наш сайт!
-        </h1>
-        <p>
-            Это пример работы сервера на Go.
-        </p>
-        <button onclick="showMessage()">
-            Нажми меня
-        </button>
-    </body>
+<head>
+    <meta charset="UTF-8">
+    <title>Автомобили в Новосибирске</title>
+    <script>
+        function showMessage() {
+            alert("Кнопка была нажата!");
+        }
+
+        // Функция для отправки heartbeat-запросов
+        function sendHeartbeat() {
+            fetch('/heartbeat', {
+                method: 'POST',
+            });
+        }
+        setInterval(sendHeartbeat, 5000);
+
+        window.addEventListener('beforeunload', function () {
+            fetch('/leave', {
+                method: 'POST',
+            });
+        });
+        
+    </script>
+</head>
+<body>
+    <h1>Добро пожаловать на наш сайт!</h1>
+    <p>Это пример работы сервера на Go.</p>
+    <button onclick="showMessage()">Нажми меня</button>
+</body>
 </html>
