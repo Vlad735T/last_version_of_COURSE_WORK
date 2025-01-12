@@ -1,13 +1,35 @@
 package main
 
 import (
+	"database/sql"
+	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 )
+
+var db *sql.DB
+
+// HashPassword хеширует пароль
+func HashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+
+// CheckPasswordHash проверяет пароль
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
 
 type ClientInfo struct {
 	ClientID    int
@@ -35,6 +57,63 @@ func NewServer(templatePath string) *Server {
 		nextID:   1,
 		htmlTmpl: htmlTmpl,
 	}
+}
+
+func (s *Server) HandleAuth(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		Phone    string `json:"phone"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Неверный формат запроса", http.StatusBadRequest)
+		return
+	}
+
+	var hashedpassword string
+	err := db.QueryRow("SELECT hashed_password FROM Users WHERE phone_number = $1", request.Phone).Scan(&hashedpassword)
+	if err != nil {
+		http.Error(w, "Пользователь не найден", http.StatusUnauthorized)
+		return
+	}
+
+	if !CheckPasswordHash(request.Password, hashedpassword) {
+		http.Error(w, "Неверный пароль", http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Авторизация успешна",
+	})
+}
+
+func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		Phone    string `json:"phone"`
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Неверный формат запроса", http.StatusBadRequest)
+		return
+	}
+
+	hashedpassword, err := HashPassword(request.Password)
+	if err != nil {
+		http.Error(w, "Ошибка при хешировании пароля", http.StatusInternalServerError)
+		return
+	}
+	_, err = db.Exec("INSERT INTO Users (phone_number, hashed_password) VALUES ($1, $2)", request.Phone, hashedpassword)
+	if err != nil {
+		http.Error(w, "Ошибка при регистрации пользователя", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Регистрация успешна",
+	})
 }
 
 // HandleRoot обрабатывает запросы к корневому маршруту "/"
@@ -119,6 +198,8 @@ func (s *Server) Start(ip, port string) {
 
 	http.HandleFunc("/", s.HandleRoot)
 	http.HandleFunc("/heartbeat", s.HandleHeartbeat)
+	http.HandleFunc("/auth", s.HandleAuth)
+	http.HandleFunc("/register", s.HandleRegister)
 
 	log.Printf("Сервер запущен на http://%s:%s\n", ip, port)
 	if err := http.ListenAndServe(ip+":"+port, nil); err != nil {
@@ -127,6 +208,13 @@ func (s *Server) Start(ip, port string) {
 }
 
 func main() {
+	connStr := "user=car_dealer_user password=!322@VTB dbname=car_dealer sslmode=disable"
+	var err error
+	db, err = sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+	}
+	defer db.Close()
 	server := NewServer("home_page_website.html")
 	server.StartClientChecker()
 	server.Start("192.168.0.165", "8080")
