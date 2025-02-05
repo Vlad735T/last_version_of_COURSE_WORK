@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация</title>
+    <script>
+        async function submitForm(event) {
+            event.preventDefault(); // Предотвращаем стандартную отправку формы
+
+            const phone = document.getElementById('phone').value;
+            const password = document.getElementById('password').value;
+
+            const phoneRegex = /^8[0-9]{10}$/;  
+            if (!phone.match(phoneRegex)) {
+                alert('Номер телефона должен начинаться с 8 и содержать 11 цифр');
+                return;
+            }
+
+            if (password.trim() === '') {
+                alert('Пароль не может быть пустым');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("phone_number", phone);
+            formData.append("password", password);
+
+            try {
+                const response = await fetch("/login", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (response.ok) {
+                    window.location.href = "/alinf"; // Перенаправление на страницу информации
+                } else {
+                    const errorMessage = await response.text();
+                    alert(errorMessage); 
+                }
+            } catch (error) {
+                alert("Ошибка соединения с сервером");
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Авторизация</h1>
+    <form onsubmit="submitForm(event)">
+        <label for="phone">Номер телефона:</label>
+        <input type="text" id="phone" name="phone_number" required>
+        <br>
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" name="password" required>
+        <br>
+        <button type="submit">Войти</button>
+    </form>
+    <p><a href="/register">Нет ещё аккаунта? Зарегистрируйтесь</a></p>
+</body>
+</html>

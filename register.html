@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <script>
+        async function submitForm(event) {
+            event.preventDefault(); // Предотвращаем стандартную отправку формы
+
+            const phone = document.getElementById('phone').value;
+            const surname = document.getElementById('surname').value;
+            const name = document.getElementById('name').value;
+            const middleName = document.getElementById('middleName').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const passwordConfirm = document.getElementById('passwordConfirm').value;
+
+            const phoneRegex = /^8[0-9]{10}$/;  
+            if (!phone.match(phoneRegex)) {
+                alert('Номер телефона должен начинаться с 8 и содержать 11 цифр');
+                return;
+            }
+
+            if (surname.trim() === '' || name.trim() === '' || middleName.trim() === '' || email.trim() === '') {
+                alert('Все поля, кроме пароля, должны быть заполнены');
+                return;
+            }
+
+            if (password.trim() === '') {
+                alert('Пароль не может быть пустым');
+                return;
+            }
+
+            if (password !== passwordConfirm) {
+                alert('Пароли не совпадают');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("phone_number", phone);
+            formData.append("surname", surname);
+            formData.append("name", name);
+            formData.append("middle_name", middleName);
+            formData.append("email", email);
+            formData.append("password", password);
+
+            try {
+                const response = await fetch("/register", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert("Регистрация успешна!");
+                    window.location.href = "/login"; // Перенаправление на страницу логина после регистрации
+                } else {
+                    const errorMessage = await response.text();
+                    alert(errorMessage); 
+                }
+            } catch (error) {
+                alert("Ошибка соединения с сервером");
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Регистрация</h1>
+    <form onsubmit="submitForm(event)">
+        <label for="surname">Фамилия:</label>
+        <input type="text" id="surname" name="surname" required>
+        <br>
+        <label for="name">Имя:</label>
+        <input type="text" id="name" name="name" required>
+        <br>
+        <label for="middleName">Отчество:</label>
+        <input type="text" id="middleName" name="middle_name" required>
+        <br>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+        <br>
+        <label for="phone">Номер телефона:</label>
+        <input type="text" id="phone" name="phone_number" required>
+        <br>
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" name="password" required>
+        <br>
+        <label for="passwordConfirm">Подтвердите пароль:</label>
+        <input type="password" id="passwordConfirm" name="passwordConfirm" required>
+        <br>
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+</body>
+</html>

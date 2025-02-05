@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Автомобили в Новосибирске</title>
+    <script>
+
+        // Функция для отправки heartbeat-запросов
+        function sendHeartbeat() {
+            fetch('/heartbeat', {
+                method: 'POST',
+            });
+        }
+        setInterval(sendHeartbeat, 1000);
+
+        window.addEventListener('beforeunload', function () {
+            fetch('/leave', {
+                method: 'POST',
+            });
+        });
+        
+        function openAuthPage(){
+            window.location.href = '/login'
+        }
+
+    </script>
+</head>
+<body>
+    <h1>Добро пожаловать на наш сайт!</h1>
+    <p>Это пример работы сервера на Go.</p>
+    <button id="authButton" onclick="openAuthPage()">Авторизация/Регистрация</button>
+</body>
+</html>
