@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"html/template"
+	"regexp"
 	"log"
 	"net/http"
 	"strings"
@@ -68,7 +69,9 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		s.nextID++
 		s.clientsMu.Unlock()
 	}
-	log.Printf("Попытка авторизации от клиента с IP: %s, ClientID: %d, Номер телефона: %s", ipAddress, client.ClientID, r.FormValue("phone_number"))
+
+	log.Printf("Клиент с IP: %s, ClientID: %d перешел на страницу авторизации", ipAddress, client.ClientID)
+
 	if r.Method == http.MethodGet {
 		_, err := os.Stat("login.html")
 		if os.IsNotExist(err) {
@@ -87,30 +90,59 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		phone := r.FormValue("phone_number")
 		password := r.FormValue("password")
-		if len(phone) != 11 || phone[0] != '8' {
-			http.Error(w, "Номер телефона должен начинаться с 8 и содержать 11 цифр", http.StatusBadRequest)
+		phoneRegex := regexp.MustCompile(`^8\d{10}$`)
+		if !phoneRegex.MatchString(phone) {
+			http.Error(w, "Некорректный формат номера телефона", http.StatusBadRequest)
 			return
 		}
-		var hashedPassword string
-		err := db.QueryRow("SELECT hashed_password FROM users WHERE phone_number = $1", phone).Scan(&hashedPassword)
-		if err == sql.ErrNoRows {
-			http.Error(w, "Номер не зарегистрирован", http.StatusUnauthorized)
-			return
-		} else if err != nil {
+
+		stmt, err := db.Prepare("SELECT hashed_password FROM users WHERE phone_number = $1")
+		if err != nil {
+			log.Printf("Ошибка подготовки запроса: %v", err)
 			http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
 			return
 		}
-		err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+		defer stmt.Close()
+
+		var hashedPassword string
+		err = stmt.QueryRow(phone).Scan(&hashedPassword)
 		if err != nil {
-			http.Error(w, "Неправильный пароль", http.StatusUnauthorized)
+			log.Printf("Ошибка авторизации для номера %s: %v", phone, err)
+
+			http.Error(w, "Неверный номер телефона или пароль", http.StatusUnauthorized)
 			return
 		}
+		if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
+			log.Printf("Ошибка авторизации: неверный пароль для номера %s", phone)
+			http.Error(w, "Неверный номер телефона или пароль", http.StatusUnauthorized)
+			return
+		}
+
 		log.Printf("Успешная авторизация: ClientID: %d, IP: %s, Номер телефона: %s", client.ClientID, ipAddress, phone)
 		http.ServeFile(w, r, "alinf.html")
 	}
 }
 
+
+
+// ??????????????????????????????????????????????????????????????????????????????????????????
+
 func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
+	ip := strings.Split(r.RemoteAddr, ":")[0]
+	s.clientsMu.Lock()
+	client, exists := s.clients[ip]
+	if !exists {
+		client = ClientInfo{
+			ClientID:  s.nextID,
+			IPAddress: ip,
+			Active:    true,
+		}
+		s.clients[ip] = client
+		s.nextID++
+	}
+	s.clientsMu.Unlock()
+	log.Printf("Пользователь с ID: %d и IP: %s перешел на страницу регистрации", client.ClientID, ip)
+
 	if r.Method == http.MethodGet {
 		_, err := os.Stat("register.html")
 		if os.IsNotExist(err) {
@@ -134,21 +166,6 @@ func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		middleName := r.FormValue("middle_name")
 		email := r.FormValue("email")
 		password := r.FormValue("password")
-
-		if len(phone) != 11 || phone[0] != '8' {
-			http.Error(w, "Номер телефона должен начинаться с 8 и содержать 11 цифр", http.StatusBadRequest)
-			return
-		}
-
-		if surname == "" || name == "" || middleName == "" || email == "" {
-			http.Error(w, "Все поля, кроме пароля, должны быть заполнены", http.StatusBadRequest)
-			return
-		}
-
-		if len(password) == 0 {
-			http.Error(w, "Пароль не может быть пустым", http.StatusBadRequest)
-			return
-		}
 
 		var existingPhone string
 		err := db.QueryRow("SELECT phone_number FROM users WHERE phone_number = $1", phone).Scan(&existingPhone)
@@ -178,9 +195,15 @@ func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		log.Printf("Пользователь с ID: %d и IP: %s успешно зарегистрирован", client.ClientID, ip)
 		w.Write([]byte("Регистрация успешна"))
 	}
 }
+
+
+
+
+
 
 func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
@@ -337,5 +360,5 @@ func main() {
 	}
 
 	defer db.Close()
-	CreateAndStartServer("HomePage.html", "192.168.0.20", "8080")
+	CreateAndStartServer("HomePage.html", "10.0.2.15", "8080")
 }

@@ -4,10 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Регистрация</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .auth-container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 320px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            text-align: left;
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: #0057b8;
+            box-shadow: 0 0 5px rgba(0, 87, 184, 0.3);
+        }
+
+        button {
+            background-color: #0057b8;
+            color: white;
+            font-size: 16px;
+            padding: 12px;
+            width: 100%;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #004799;
+        }
+
+        p {
+            font-size: 14px;
+            margin-top: 15px;
+        }
+
+        a {
+            color: #0057b8;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
     <script>
         async function submitForm(event) {
-            event.preventDefault(); // Предотвращаем стандартную отправку формы
-
+            event.preventDefault();
             const phone = document.getElementById('phone').value;
             const surname = document.getElementById('surname').value;
             const name = document.getElementById('name').value;
@@ -16,24 +95,63 @@
             const password = document.getElementById('password').value;
             const passwordConfirm = document.getElementById('passwordConfirm').value;
 
-            const phoneRegex = /^8[0-9]{10}$/;  
-            if (!phone.match(phoneRegex)) {
-                alert('Номер телефона должен начинаться с 8 и содержать 11 цифр');
+            function letters_conversions(str) { 
+                return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+            }
+
+            const capitalizedSurname = letters_conversions(surname);
+            const capitalizedName = letters_conversions(name);
+            const capitalizedMiddleName = letters_conversions(middleName);
+
+            const russianRegex = /^[а-яА-ЯёЁ]+$/;  
+            const englishRegex = /^[a-zA-Z]+$/;  
+
+            function checkSameAlphabet(str) {
+                return russianRegex.test(str) || englishRegex.test(str);
+            }
+
+            if (!checkSameAlphabet(capitalizedSurname) || !checkSameAlphabet(capitalizedName) || !checkSameAlphabet(capitalizedMiddleName)) {
+                alert('Фамилия, имя и отчество должны содержать только буквы одного алфавита (либо только русские, либо только английские)');
                 return;
             }
 
-            if (surname.trim() === '' || name.trim() === '' || middleName.trim() === '' || email.trim() === '') {
-                alert('Все поля, кроме пароля, должны быть заполнены');
+            // Проверка, что все поля содержат только буквы (русские или английские)
+            if (!capitalizedSurname.match(russianRegex) && !capitalizedSurname.match(englishRegex) || 
+                !capitalizedName.match(russianRegex) && !capitalizedName.match(englishRegex) || 
+                !capitalizedMiddleName.match(russianRegex) && !capitalizedMiddleName.match(englishRegex)) {
+                alert('Фамилия, имя и отчество должны содержать только русские или английские буквы');
                 return;
             }
 
-            if (password.trim() === '') {
-                alert('Пароль не может быть пустым');
-                return;
-            }
+            document.getElementById('surname').value = capitalizedSurname;
+            document.getElementById('name').value = capitalizedName;
+            document.getElementById('middleName').value = capitalizedMiddleName;
 
             if (password !== passwordConfirm) {
                 alert('Пароли не совпадают');
+                return;
+            }
+
+            const allowedEmailDomains = new Set([ 
+                'gmail.com', 'yahoo.com', 'mail.ru', 'yandex.ru', 'icloud.com',  
+                'outlook.com', 'rambler.ru', 'hotmail.com', 'list.ru', 'bk.ru', 'inbox.ru', 'ya.ru'
+            ]);
+
+            if (!email.includes('@')) {
+                alert('Email должен содержать символ @');
+                return;
+            }
+
+            const [localPart, emailDomain] = email.split('@');
+            const localPartRegex = /^[a-zA-Z0-9]+$/;
+
+            if (!localPart.match(localPartRegex)) {
+                alert('Адрес почты должен содержать только английские буквы и цифры');
+                return;
+            }
+
+            if (!allowedEmailDomains.has(emailDomain)) {
+                alert(`Email должен быть с одним из следующих доменов: ${Array.from(allowedEmailDomains).join(', ')}`);
                 return;
             }
 
@@ -65,30 +183,39 @@
     </script>
 </head>
 <body>
-    <h1>Регистрация</h1>
-    <form onsubmit="submitForm(event)">
-        <label for="surname">Фамилия:</label>
-        <input type="text" id="surname" name="surname" required>
-        <br>
-        <label for="name">Имя:</label>
-        <input type="text" id="name" name="name" required>
-        <br>
-        <label for="middleName">Отчество:</label>
-        <input type="text" id="middleName" name="middle_name" required>
-        <br>
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
-        <br>
-        <label for="phone">Номер телефона:</label>
-        <input type="text" id="phone" name="phone_number" required>
-        <br>
-        <label for="password">Пароль:</label>
-        <input type="password" id="password" name="password" required>
-        <br>
-        <label for="passwordConfirm">Подтвердите пароль:</label>
-        <input type="password" id="passwordConfirm" name="passwordConfirm" required>
-        <br>
-        <button type="submit">Зарегистрироваться</button>
-    </form>
+    <div class="auth-container">
+        <h1>Регистрация</h1>
+        <form onsubmit="submitForm(event)">
+            <label for="surname">Фамилия:</label>
+            <input type="text" id="surname" name="surname" maxlength="20" required>
+            
+            <label for="name">Имя:</label>
+            <input type="text" id="name" name="name" maxlength="20" required>
+            
+            <label for="middleName">Отчество:</label>
+            <input type="text" id="middleName" name="middle_name" maxlength="20" required>
+            
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" maxlength="40" required>
+            
+            <label for="phone">Номер телефона:</label>
+            <input type="text" id="phone" name="phone_number" 
+                required maxlength="11" pattern="8[0-9]{10}" 
+                title="Номер телефона должен начинаться с 8 и содержать 11 цифр">
+            
+            <label for="password">Пароль:</label>
+            <input type="password" id="password" name="password" 
+                required minlength="5" maxlength="25" 
+                title="Пароль должен содержать от 5 до 25 символов">
+            
+            <label for="passwordConfirm">Подтвердите пароль:</label>
+            <input type="password" id="passwordConfirm" name="passwordConfirm" 
+                required minlength="5" maxlength="25" 
+                title="Пароль должен содержать от 5 до 25 символов">
+            
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+        <p><a href="/login">Есть аккаунт? Войти</a></p> 
+    </div>
 </body>
 </html>
