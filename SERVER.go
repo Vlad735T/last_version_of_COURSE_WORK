@@ -3,15 +3,17 @@ package main
 import (
 	"database/sql"
 	"os"
-
-	"html/template"
 	"regexp"
+
+	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -53,41 +55,42 @@ type Server struct {
 
 // ??????????????????????????????????????????????????????????????????????????????????????????
 
+
 func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	ipAddress := strings.Split(r.RemoteAddr, ":")[0]
-	s.clientsMu.Lock()
-	client, exists := s.clients[ipAddress]
-	s.clientsMu.Unlock()
-	if !exists {
-		client = ClientInfo{
-			ClientID:  s.nextID,
-			IPAddress: ipAddress,
-			Active:    true,
-		}
-		s.clientsMu.Lock()
-		s.clients[ipAddress] = client
-		s.nextID++
-		s.clientsMu.Unlock()
-	}
+    ipAddress := strings.Split(r.RemoteAddr, ":")[0]
+    s.clientsMu.Lock()
+    client, exists := s.clients[ipAddress]
+    s.clientsMu.Unlock()
+    if !exists {
+        client = ClientInfo{
+            ClientID:  s.nextID,
+            IPAddress: ipAddress,
+            Active:    true,
+        }
+        s.clientsMu.Lock()
+        s.clients[ipAddress] = client
+        s.nextID++
+        s.clientsMu.Unlock()
+    }
 
-	log.Printf("Клиент с IP: %s, ClientID: %d перешел на страницу авторизации", ipAddress, client.ClientID)
+    log.Printf("Клиент с IP: %s, ClientID: %d перешел на страницу авторизации", ipAddress, client.ClientID)
 
-	if r.Method == http.MethodGet {
-		_, err := os.Stat("login.html")
-		if os.IsNotExist(err) {
-			log.Printf("Ошибка: файл login.html не найден")
-			http.Error(w, "Страница не найдена", http.StatusNotFound)
-			return
-		} else if err != nil {
-			log.Printf("Ошибка при доступе к файлу: %v", err)
-			http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
-			return
-		}
-		http.ServeFile(w, r, "login.html")
-		return
-	}
+    if r.Method == http.MethodGet {
+        _, err := os.Stat("login.html")
+        if os.IsNotExist(err) {
+            log.Printf("Ошибка: файл login.html не найден")
+            http.Error(w, "Страница не найдена", http.StatusNotFound)
+            return
+        } else if err != nil {
+            log.Printf("Ошибка при доступе к файлу: %v", err)
+            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+            return
+        }
+        http.ServeFile(w, r, "login.html")
+        return
+    }
 
-	if r.Method == http.MethodPost {
+    if r.Method == http.MethodPost {
 		phone := r.FormValue("phone_number")
 		password := r.FormValue("password")
 		phoneRegex := regexp.MustCompile(`^8\d{10}$`)
@@ -96,7 +99,7 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		stmt, err := db.Prepare("SELECT hashed_password FROM users WHERE phone_number = $1")
+		stmt, err := db.Prepare("SELECT id_users, hashed_password FROM users WHERE phone_number = $1")
 		if err != nil {
 			log.Printf("Ошибка подготовки запроса: %v", err)
 			http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
@@ -104,23 +107,288 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		defer stmt.Close()
 
+		var idUsers int
 		var hashedPassword string
-		err = stmt.QueryRow(phone).Scan(&hashedPassword)
+		err = stmt.QueryRow(phone).Scan(&idUsers, &hashedPassword)
 		if err != nil {
 			log.Printf("Ошибка авторизации для номера %s: %v", phone, err)
-
 			http.Error(w, "Неверный номер телефона или пароль", http.StatusUnauthorized)
 			return
 		}
+
+		// Проверяем пароль
 		if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
 			log.Printf("Ошибка авторизации: неверный пароль для номера %s", phone)
 			http.Error(w, "Неверный номер телефона или пароль", http.StatusUnauthorized)
 			return
 		}
 
-		log.Printf("Успешная авторизация: ClientID: %d, IP: %s, Номер телефона: %s", client.ClientID, ipAddress, phone)
+		log.Printf("Успешная авторизация: ID пользователя: %d, IP: %s, Номер телефона: %s", idUsers, ipAddress, phone)
+
+		token, err := GenerationJWT(idUsers)
+		if err != nil {
+			http.Error(w, "Ошибка генерации токена", http.StatusInternalServerError)
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "jwt_token",
+			Value:    token,
+			Path:     "/",
+			HttpOnly: true,
+		})
+
 		http.ServeFile(w, r, "alinf.html")
+    }
+}
+
+
+
+
+
+
+var jwtSecretKey = []byte("KlN621!")
+
+func GenerationJWT(ClientID int) (string, error){
+	JwtData := jwt.MapClaims{
+		"id_users": ClientID,
+		"expirationTime":  time.Now().Add(24 * time.Hour).Unix(), // Время истечения токена
 	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JwtData)
+	return token.SignedString(jwtSecretKey)
+}
+
+func CheckJwtToken(tokenStr string)(int, error){
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error){
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok{
+			return nil, fmt.Errorf("неправильный метод подписи")
+		}
+		return jwtSecretKey, nil
+	})
+	if err != nil || !token.Valid {
+		return 0, fmt.Errorf("невалидный токен")
+	}
+
+	TokenData, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, fmt.Errorf("не удалось получить данные из токена")
+	}
+
+	ClientID, ok := TokenData["id_users"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("не удалось получить ID пользователя из токена")
+	}
+	return int(ClientID), nil
+}
+
+type UserData struct {
+    ID          int
+    Surname     string
+    Name        string
+    MiddleName  string
+    PhoneNumber string
+    Email       string
+    TimeCreated string
+}
+
+func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        http.Error(w, "Неверный метод запроса", http.StatusMethodNotAllowed)
+        return
+    }
+
+    ipAddress := strings.Split(r.RemoteAddr, ":")[0]
+
+    cookie, err := r.Cookie("jwt_token")
+    if err != nil || cookie.Value == "" {
+        log.Printf("JWT-токен не найден, редирект на страницу входа")
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
+    }
+
+    idUsers, err := CheckJwtToken(cookie.Value) 
+    if err != nil {
+        log.Printf("Ошибка проверки токена: %v", err)
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
+    }
+
+    s.clientsMu.Lock()
+    client, exists := s.clients[ipAddress]
+    s.clientsMu.Unlock()
+    if !exists || !client.Active {
+        log.Printf("Клиент с IP: %s и id_users: %d неактивен", ipAddress, idUsers)
+        http.Error(w, "Ваш аккаунт не активен", http.StatusForbidden)
+        return
+    }
+
+    // Запрос данных о пользователе по id_users
+    userData, err := getUserDataByID(db, idUsers)
+    if err != nil {
+        log.Printf("Ошибка при извлечении данных пользователя: %v", err)
+        http.Error(w, "Ошибка при извлечении данных пользователя", http.StatusInternalServerError)
+        return
+    }
+
+    data := struct {
+        Username  string
+        UserData  UserData
+        Token     string
+    }{
+        Username: userData.Name,
+        UserData: userData,
+        Token:    cookie.Value,
+    }
+
+    tmpl, err := template.ParseFiles("alinf.html")
+    if err != nil {
+        log.Printf("Ошибка при парсинге шаблона: %v", err)
+        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+        return
+    }
+
+    err = tmpl.Execute(w, data)
+    if err != nil {
+        log.Printf("Ошибка при рендеринге шаблона: %v", err)
+		return
+    }
+}
+
+
+func getUserDataByID(db *sql.DB, idUsers int) (UserData, error) {
+    var userData UserData
+    query := `SELECT id_users, surname, name, middle_name, phone_number, email, time_created 
+				FROM users WHERE id_users = $1`
+    err := db.QueryRow(query, idUsers).Scan(&userData.ID, &userData.Surname, &userData.Name, 
+										&userData.MiddleName, &userData.PhoneNumber, 
+										&userData.Email, &userData.TimeCreated)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return UserData{}, fmt.Errorf("пользователь не найден")
+        }
+        return UserData{}, fmt.Errorf("ошибка при извлечении данных: %v", err)
+    }
+    return userData, nil
+}
+
+
+
+
+
+// func (s *Server) HandleSettings(w http.ResponseWriter, r *http.Request) {
+//     if r.Method != http.MethodPost {
+//         http.Error(w, "Неверный метод запроса", http.StatusMethodNotAllowed)
+//         return
+//     }
+//     cookie, err := r.Cookie("jwt_token")
+//     if err != nil || cookie.Value == "" {
+//         http.Error(w, "Токен авторизации не найден", http.StatusUnauthorized)
+//         return
+//     }
+//     idUsers, err := CheckJwtToken(cookie.Value)
+//     if err != nil {
+//         http.Error(w, "Неверный токен авторизации", http.StatusUnauthorized)
+//         return
+//     }
+//     r.ParseForm()
+//     surname := r.FormValue("surname")
+//     name := r.FormValue("name")
+//     middleName := r.FormValue("middle_name")
+//     phone := r.FormValue("phone_number")
+//     email := r.FormValue("email")
+//     query := `UPDATE users SET surname=$1, name=$2, middle_name=$3, phone_number=$4, email=$5 WHERE id_users=$6`
+//     _, err = db.Exec(query, surname, name, middleName, phone, email, idUsers)
+//     if err != nil {
+//         log.Printf("Ошибка обновления данных пользователя: %v", err)
+//         http.Error(w, "Ошибка обновления данных", http.StatusInternalServerError)
+//         return
+//     }
+//     log.Printf("Пользователь ID %d успешно обновил данные", idUsers)
+//     w.Write([]byte("Данные успешно обновлены"))
+// }
+
+
+func (s *Server) HandleSettings(w http.ResponseWriter, r *http.Request) {
+    // Обработка GET-запроса (отображение страницы настроек)
+    if r.Method == http.MethodGet {
+        cookie, err := r.Cookie("jwt_token")
+        if err != nil || cookie.Value == "" {
+            http.Error(w, "Токен авторизации не найден", http.StatusUnauthorized)
+            return
+        }
+
+        idUsers, err := CheckJwtToken(cookie.Value)
+        if err != nil {
+            http.Error(w, "Неверный токен авторизации", http.StatusUnauthorized)
+            return
+        }
+
+        userData, err := getUserDataByID(db, idUsers)
+        if err != nil {
+            log.Printf("Ошибка при извлечении данных пользователя: %v", err)
+            http.Error(w, "Ошибка при извлечении данных пользователя", http.StatusInternalServerError)
+            return
+        }
+
+        data := struct {
+            Username  string
+            UserData  UserData
+            Token     string
+        }{
+            Username: userData.Name,
+            UserData: userData,
+            Token:    cookie.Value,
+        }
+
+        tmpl, err := template.ParseFiles("settings.html")
+        if err != nil {
+            log.Printf("Ошибка при парсинге шаблона: %v", err)
+            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+            return
+        }
+
+        err = tmpl.Execute(w, data)
+        if err != nil {
+            log.Printf("Ошибка при рендеринге шаблона: %v", err)
+            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+            return
+        }
+    }
+
+    // Обработка POST-запроса (обновление данных пользователя)
+    if r.Method == http.MethodPost {
+        cookie, err := r.Cookie("jwt_token")
+        if err != nil || cookie.Value == "" {
+            http.Error(w, "Токен авторизации не найден", http.StatusUnauthorized)
+            return
+        }
+
+        idUsers, err := CheckJwtToken(cookie.Value)
+        if err != nil {
+            http.Error(w, "Неверный токен авторизации", http.StatusUnauthorized)
+            return
+        }
+
+        r.ParseForm()
+        surname := r.FormValue("surname")
+        name := r.FormValue("name")
+        middleName := r.FormValue("middle_name")
+        phone := r.FormValue("phone_number")
+        email := r.FormValue("email")
+
+        query := `UPDATE users 
+				SET surname=$1, name=$2, middle_name=$3, phone_number=$4, email=$5 
+				WHERE id_users=$6`
+        _, err = db.Exec(query, surname, name, middleName, phone, email, idUsers)
+        if err != nil {
+            log.Printf("Ошибка обновления данных пользователя: %v", err)
+            http.Error(w, "Ошибка обновления данных", http.StatusInternalServerError)
+            return
+        }
+
+        log.Printf("Пользователь ID %d успешно обновил данные", idUsers)
+        w.Write([]byte("Данные успешно обновлены"))
+    }
 }
 
 
@@ -197,29 +465,6 @@ func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
 
 		log.Printf("Пользователь с ID: %d и IP: %s успешно зарегистрирован", client.ClientID, ip)
 		w.Write([]byte("Регистрация успешна"))
-	}
-}
-
-
-
-
-
-
-func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		_, err := os.Stat("alinf.html")
-		if os.IsNotExist(err) {
-			log.Printf("Ошибка: файл alinf.html не найден")
-			http.Error(w, "Страница не найдена", http.StatusNotFound)
-			return
-		} else if err != nil {
-			log.Printf("Ошибка при доступе к файлу: %v", err)
-			http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
-			return
-		}
-
-		http.ServeFile(w, r, "alinf.html")
-		return
 	}
 }
 
@@ -340,6 +585,8 @@ func CreateAndStartServer(templatePath, ip, port string) *Server {
 	http.HandleFunc("/login", server.HandleLogin)
 	http.HandleFunc("/register", server.HandleRegister)
 	http.HandleFunc("/alinf", server.HandleInfo)
+	http.HandleFunc("/settings", server.HandleSettings)
+	
 
 	// go server.CheckClientStatus()
 
@@ -360,5 +607,5 @@ func main() {
 	}
 
 	defer db.Close()
-	CreateAndStartServer("HomePage.html", "10.0.2.15", "8080")
+	CreateAndStartServer("HomePage.html", "192.168.0.125", "8080")
 }

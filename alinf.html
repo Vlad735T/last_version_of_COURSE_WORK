@@ -3,10 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Информация</title>
+    <title>АвтоНск - Поиск автомобилей в Новосибирске</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        main {
+            padding: 20px;
+        }
+
+        /* Черный прямоугольник с именем в правом верхнем углу */
+        .profile-card {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            width: 100%;
+            box-sizing: border-box;
+            position: fixed;
+            top: 0;
+            right: 0; 
+            z-index: 10; 
+            display: flex;
+            justify-content: flex-end; 
+            align-items: center;
+        }
+
+        .profile-card h2 {
+            margin: 0;
+            cursor: pointer;
+            display: inline-block;
+            position: relative; 
+        }
+
+        .profile-options {
+            display: none;
+            background-color: white;
+            color: #333;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); 
+            position: absolute;
+            top: 100%; 
+            right: 0; 
+            min-width: 200px;
+        }
+
+        .profile-options a {
+            display: block;
+            color: #2196F3; 
+            text-decoration: none;
+            margin: 5px 0;
+        }
+
+        .profile-options a:hover {
+            text-decoration: underline;
+        }
+
+        /* Показывать список при наведении */
+        .profile-card:hover .profile-options,
+        .profile-options:hover {
+            display: block;
+        }
+
+        @media screen and (max-width: 768px) {
+            .profile-card {
+                padding: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Добро пожаловать на страницу с информацией!</h1>
-    <p>Здесь будет ваша информация.</p>
+    <main>
+        <!-- Черный прямоугольник с именем в правом верхнем углу -->
+        <div class="profile-card">
+            <h2 tabindex="0">{{ .Username }}</h2>
+
+            <div class="profile-options">
+                <a href="/settings">Управление профилем</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Обработка событий для работы на мобильных устройствах
+        const profileCard = document.querySelector('.profile-card');
+        const profileOptions = document.querySelector('.profile-options');
+        const username = document.querySelector('h2');
+
+        // Показывать список при наведении на имя (для десктопа)
+        username.addEventListener('mouseenter', () => {
+            profileOptions.style.display = 'block';
+        });
+
+        // Показывать список при наведении на выпадающий список
+        profileOptions.addEventListener('mouseenter', () => {
+            profileOptions.style.display = 'block';
+        });
+
+        // Скрывать список, если курсор покидает и имя пользователя, и выпадающий список
+        profileCard.addEventListener('mouseleave', () => {
+            setTimeout(() => {
+                if (!profileCard.matches(':hover')) {
+                    profileOptions.style.display = 'none';
+                }
+            }, 50); // Задержка 50 мс
+        });
+
+        // Скрытие списка при клике вне области профиля (для мобильных)
+        document.addEventListener('click', (event) => {
+            if (!profileCard.contains(event.target)) {
+                profileOptions.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>

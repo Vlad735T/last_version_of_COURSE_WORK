@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки профиля</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .settings-container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 320px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            text-align: left;
+            margin-bottom: 6px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            outline: none;
+        }
+        button {
+            background-color: #0057b8;
+            color: white;
+            font-size: 16px;
+            padding: 12px;
+            width: 100%;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #004799;
+        }
+    </style>
+    <script>
+        async function loadProfile() {
+            const token = localStorage.getItem("jwt");
+            if (!token) {
+                window.location.href = "/login";
+                return;
+            }
+
+            const response = await fetch("/get-profile", {
+                method: "GET",
+                headers: { "Authorization": "Bearer " + token }
+            });
+
+            if (!response.ok) {
+                alert("Ошибка загрузки профиля");
+                window.location.href = "/login";
+                return;
+            }
+
+            const user = await response.json();
+            document.getElementById("surname").value = user.surname;
+            document.getElementById("name").value = user.name;
+            document.getElementById("middleName").value = user.middle_name;
+            document.getElementById("email").value = user.email;
+            document.getElementById("phone").value = user.phone_number;
+        }
+
+        async function updateProfile(event) {
+            event.preventDefault();
+            const token = localStorage.getItem("jwt");
+            if (!token) {
+                alert("Вы не авторизованы");
+                window.location.href = "/login";
+                return;
+            }
+
+            const surname = document.getElementById('surname').value.trim();
+            const name = document.getElementById('name').value.trim();
+            const middleName = document.getElementById('middleName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const passwordConfirm = document.getElementById('passwordConfirm').value;
+
+            if (password && password.length < 5) {
+                alert("Пароль должен быть не менее 5 символов");
+                return;
+            }
+            if (password !== passwordConfirm) {
+                alert("Пароли не совпадают");
+                return;
+            }
+
+            const response = await fetch("/update-profile", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({ surname, name, middle_name: middleName, email, password })
+            });
+
+            if (response.ok) {
+                alert("Данные обновлены!");
+                window.location.href = "/alinf";
+            } else {
+                alert("Ошибка при обновлении профиля");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", loadProfile);
+    </script>
+</head>
+<body>
+    <div class="settings-container">
+        <h1>Настройки профиля</h1>
+        <form onsubmit="updateProfile(event)">
+            <label for="surname">Фамилия:</label>
+            <input type="text" id="surname" name="surname" required>
+
+            <label for="name">Имя:</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="middleName">Отчество:</label>
+            <input type="text" id="middleName" name="middle_name" required>
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="password">Новый пароль (необязательно):</label>
+            <input type="password" id="password" name="password">
+
+            <label for="passwordConfirm">Подтвердите пароль:</label>
+            <input type="password" id="passwordConfirm" name="passwordConfirm">
+
+            <button type="submit">Сохранить</button>
+        </form>
+    </div>
+</body>
+</html>
