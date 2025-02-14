@@ -3,37 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Настройки профиля</title>
+    <title>Управление профилем</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            background-color: #f9f9f9;
             margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
-        .settings-container {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            width: 320px;
-            text-align: center;
-        }
+
         h1 {
+            color: #0057b8;
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        p {
+            font-size: 16px;
             color: #333;
-            font-size: 22px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
+
         label {
-            display: block;
             font-size: 14px;
-            color: #666;
-            text-align: left;
-            margin-bottom: 6px;
+            color: #333;
+            display: block;
+            margin: 10px 0 5px;
         }
+
         input {
             width: 100%;
             padding: 10px;
@@ -41,8 +52,16 @@
             border: 1px solid #ccc;
             border-radius: 6px;
             margin-bottom: 15px;
+            box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input:focus {
+            border-color: #0057b8;
+            box-shadow: 0 0 5px rgba(0, 87, 184, 0.3);
             outline: none;
         }
+
         button {
             background-color: #0057b8;
             color: white;
@@ -52,107 +71,164 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
+
         button:hover {
             background-color: #004799;
         }
+
+        .back-button {
+            background-color: transparent;
+            border: 1px solid #0057b8;
+            color: #0057b8;
+            margin-top: 15px;
+        }
+
+        .back-button:hover {
+            background-color: #0057b8;
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        p.alert {
+            font-size: 14px;
+            color: red;
+            margin-top: 15px;
+        }
+
+        a {
+            color: #0057b8;
+            text-decoration: none;
+        }
     </style>
-    <script>
-        async function loadProfile() {
-            const token = localStorage.getItem("jwt");
-            if (!token) {
-                window.location.href = "/login";
-                return;
-            }
-
-            const response = await fetch("/get-profile", {
-                method: "GET",
-                headers: { "Authorization": "Bearer " + token }
-            });
-
-            if (!response.ok) {
-                alert("Ошибка загрузки профиля");
-                window.location.href = "/login";
-                return;
-            }
-
-            const user = await response.json();
-            document.getElementById("surname").value = user.surname;
-            document.getElementById("name").value = user.name;
-            document.getElementById("middleName").value = user.middle_name;
-            document.getElementById("email").value = user.email;
-            document.getElementById("phone").value = user.phone_number;
-        }
-
-        async function updateProfile(event) {
-            event.preventDefault();
-            const token = localStorage.getItem("jwt");
-            if (!token) {
-                alert("Вы не авторизованы");
-                window.location.href = "/login";
-                return;
-            }
-
-            const surname = document.getElementById('surname').value.trim();
-            const name = document.getElementById('name').value.trim();
-            const middleName = document.getElementById('middleName').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const passwordConfirm = document.getElementById('passwordConfirm').value;
-
-            if (password && password.length < 5) {
-                alert("Пароль должен быть не менее 5 символов");
-                return;
-            }
-            if (password !== passwordConfirm) {
-                alert("Пароли не совпадают");
-                return;
-            }
-
-            const response = await fetch("/update-profile", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify({ surname, name, middle_name: middleName, email, password })
-            });
-
-            if (response.ok) {
-                alert("Данные обновлены!");
-                window.location.href = "/alinf";
-            } else {
-                alert("Ошибка при обновлении профиля");
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", loadProfile);
-    </script>
 </head>
 <body>
-    <div class="settings-container">
-        <h1>Настройки профиля</h1>
-        <form onsubmit="updateProfile(event)">
-            <label for="surname">Фамилия:</label>
-            <input type="text" id="surname" name="surname" required>
+    <h1>Управление профилем</h1>
 
-            <label for="name">Имя:</label>
-            <input type="text" id="name" name="name" required>
+    <div class="container">
+        <p><strong>Фамилия:</strong> {{ .UserData.Surname }}</p>
+        <p><strong>Имя:</strong> {{ .UserData.Name }}</p>
+        <p><strong>Отчество:</strong> {{ .UserData.MiddleName }}</p> 
+        <p><strong>Email:</strong> {{ .UserData.Email }}</p>
 
-            <label for="middleName">Отчество:</label>
-            <input type="text" id="middleName" name="middle_name" required>
+        <form id="profileForm" method="POST" action="/update_inf">
+            <div class="form-group">
+                <label for="surname">Фамилия:</label>
+                <input type="text" id="surname" name="surname" maxlength="20" required>
+            </div>
 
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" required>
+            <div class="form-group">
+                <label for="name">Имя:</label>
+                <input type="text" id="name" name="name" maxlength="20" required>
+            </div>
 
-            <label for="password">Новый пароль (необязательно):</label>
-            <input type="password" id="password" name="password">
+            <div class="form-group">
+                <label for="middle_name">Отчество:</label> 
+                <input type="text" id="middleName" name="middle_name" maxlength="20" required>
+            </div>
 
-            <label for="passwordConfirm">Подтвердите пароль:</label>
-            <input type="password" id="passwordConfirm" name="passwordConfirm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" maxlength="40" required>
+            </div>
 
-            <button type="submit">Сохранить</button>
+            <div class="form-group">
+                <label for="password">Пароль:</label>
+                <input type="password" id="password" name="password" required minlength="5" maxlength="25" title="Пароль должен содержать от 5 до 25 символов">
+            </div>
+
+            <button type="submit">Обновить</button>
         </form>
+
+        <button class="back-button" onclick="window.location.href='/allinf'">Назад</button>
     </div>
+
+    <script>
+        function letters_conversions(str) { 
+            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+        }
+
+        const russianRegex = /^[а-яА-ЯёЁ]+$/;  
+        const englishRegex = /^[a-zA-Z]+$/;  
+
+        function checkSameAlphabet(str) {
+            return russianRegex.test(str) || englishRegex.test(str);
+        }
+
+        const profileForm = document.getElementById('profileForm');
+        profileForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const surname = document.getElementById('surname').value;
+            const name = document.getElementById('name').value;
+            const middleName = document.getElementById('middleName').value; 
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const capitalizedSurname = letters_conversions(surname);
+            const capitalizedName = letters_conversions(name);
+            const capitalizedMiddleName = letters_conversions(middleName);
+
+            if (!checkSameAlphabet(capitalizedSurname) || !checkSameAlphabet(capitalizedName) || !checkSameAlphabet(capitalizedMiddleName)) {
+                alert('Фамилия, имя и отчество должны содержать только буквы одного алфавита (либо только русские, либо только английские)');
+                return;
+            }
+
+            document.getElementById('surname').value = capitalizedSurname;
+            document.getElementById('name').value = capitalizedName;
+            document.getElementById('middleName').value = capitalizedMiddleName;
+
+            const allowedEmailDomains = new Set([ 
+                'gmail.com', 'yahoo.com', 'mail.ru', 'yandex.ru', 'icloud.com',  
+                'outlook.com', 'rambler.ru', 'hotmail.com', 'list.ru', 'bk.ru', 'inbox.ru', 'ya.ru', 'microsoft.com'
+            ]);
+
+            if (!email.includes('@')) {
+                alert('Email должен содержать символ @');
+                return;
+            }
+
+            const [localPart, emailDomain] = email.split('@');
+            const localPartRegex = /^[a-zA-Z0-9]+$/;
+
+            if (!localPart.match(localPartRegex)) {
+                alert('Адрес почты должен содержать только английские буквы и цифры');
+                return;
+            }
+
+            if (!allowedEmailDomains.has(emailDomain)) {
+                alert(`Email должен быть с одним из следующих доменов: ${Array.from(allowedEmailDomains).join(', ')}`);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("surname", capitalizedSurname);
+            formData.append("name", capitalizedName);
+            formData.append("middle_name", capitalizedMiddleName); 
+            formData.append("email", email);
+            formData.append("password", password);
+
+            try {
+                const response = await fetch("/update_inf", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    alert("Данные обновлены успешно!");
+                    window.location.href = "/allinf";
+                } else {
+                    const errorMessage = await response.text();
+                    alert(errorMessage); 
+                }
+            } catch (error) {
+                alert("Ошибка соединения с сервером");
+            }
+        });
+    </script>
 </body>
 </html>

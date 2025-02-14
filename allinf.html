@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>АвтоНск - Поиск автомобилей в Новосибирске</title>
+
+    <style>
+        .profile-card {
+            position: relative;
+            display: inline-block;
+        }
+
+        .profile-options {
+            display: none; 
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            top: 100%;
+            left: 0;
+            min-width: 200px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .profile-options button {
+            width: 100%;
+            padding: 10px;
+            background-color: #0057b8;
+            color: white;
+            border: none;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .profile-options button:hover {
+            background-color: #004799; 
+        }
+
+        .profile-card h2 {
+            cursor: pointer;
+        }
+    </style>
+    
+</head>
+<body>
+    <main>
+        <div class="profile-card">
+            <h2 tabindex="0">{{ .Username }}</h2>
+
+            <div class="profile-options">
+                <button onclick="window.location.href = '/settings'">Управление профилем</button>
+                <button onclick="logout()">Выйти</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const profileCard = document.querySelector('.profile-card');
+        const profileOptions = document.querySelector('.profile-options');
+        const username = document.querySelector('h2');
+
+        // Показывать список при наведении на имя (для десктопа)
+        username.addEventListener('mouseenter', () => {
+            profileOptions.style.display = 'block'; // Показываем список
+        });
+
+        // Показывать список при наведении на выпадающий список
+        profileOptions.addEventListener('mouseenter', () => {
+            profileOptions.style.display = 'block';
+        });
+
+        // Скрывать список, если курсор покидает и имя пользователя, и выпадающий список
+        profileCard.addEventListener('mouseleave', () => {
+            setTimeout(() => {
+                if (!profileCard.matches(':hover')) {
+                    profileOptions.style.display = 'none'; 
+                }
+            }, 50); // Задержка 50 мс
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!profileCard.contains(event.target)) {
+                profileOptions.style.display = 'none';
+            }
+        });
+
+        function logout() {
+            document.cookie = "jwt_token=; Max-Age=0; path=/";
+
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html>

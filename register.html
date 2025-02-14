@@ -115,7 +115,6 @@
                 return;
             }
 
-            // Проверка, что все поля содержат только буквы (русские или английские)
             if (!capitalizedSurname.match(russianRegex) && !capitalizedSurname.match(englishRegex) || 
                 !capitalizedName.match(russianRegex) && !capitalizedName.match(englishRegex) || 
                 !capitalizedMiddleName.match(russianRegex) && !capitalizedMiddleName.match(englishRegex)) {
@@ -134,7 +133,7 @@
 
             const allowedEmailDomains = new Set([ 
                 'gmail.com', 'yahoo.com', 'mail.ru', 'yandex.ru', 'icloud.com',  
-                'outlook.com', 'rambler.ru', 'hotmail.com', 'list.ru', 'bk.ru', 'inbox.ru', 'ya.ru'
+                'outlook.com', 'rambler.ru', 'hotmail.com', 'list.ru', 'bk.ru', 'inbox.ru', 'ya.ru', 'microsoft.com'
             ]);
 
             if (!email.includes('@')) {
@@ -171,7 +170,7 @@
 
                 if (response.ok) {
                     alert("Регистрация успешна!");
-                    window.location.href = "/login"; // Перенаправление на страницу логина после регистрации
+                    window.location.href = "/login"; 
                 } else {
                     const errorMessage = await response.text();
                     alert(errorMessage); 
@@ -202,7 +201,6 @@
             <input type="text" id="phone" name="phone_number" 
                 required maxlength="11" pattern="8[0-9]{10}" 
                 title="Номер телефона должен начинаться с 8 и содержать 11 цифр">
-            
             <label for="password">Пароль:</label>
             <input type="password" id="password" name="password" 
                 required minlength="5" maxlength="25" 

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -33,8 +34,8 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-// ??????????????????????????????????????????????????????????????????????????????????????????
 
+// *******************************************
 type ClientInfo struct {
 	ClientID     int
 	IPAddress    string
@@ -43,7 +44,15 @@ type ClientInfo struct {
 	Active       bool
 }
 
-// ??????????????????????????????????????????????????????????????????????????????????????????
+type UserData struct {
+    ID          int
+    Surname     string
+    Name        string
+    MiddleName  string
+    PhoneNumber string
+    Email       string
+    TimeCreated string
+}
 
 type Server struct {
 	clients            map[string]ClientInfo
@@ -52,8 +61,44 @@ type Server struct {
 	clientsMu          sync.Mutex
 	htmlTmpl           *template.Template
 }
+// *******************************************
 
-// ??????????????????????????????????????????????????????????????????????????????????????????
+
+// ******************************************************************************************
+var jwtSecretKey = []byte("KlN621!")
+
+func GenerationJWT(ClientID int) (string, error){
+	JwtData := jwt.MapClaims{
+		"id_users": ClientID,
+		"expirationTime":  time.Now().Add(24 * time.Hour).Unix(), // Время истечения токена
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JwtData)
+	return token.SignedString(jwtSecretKey)
+}
+
+func CheckJwtToken(tokenStr string)(int, error){
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error){
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok{
+			return nil, fmt.Errorf("неправильный метод подписи")
+		}
+		return jwtSecretKey, nil
+	})
+	if err != nil || !token.Valid {
+		return 0, fmt.Errorf("невалидный токен")
+	}
+
+	TokenData, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, fmt.Errorf("не удалось получить данные из токена")
+	}
+
+	ClientID, ok := TokenData["id_users"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("не удалось получить ID пользователя из токена")
+	}
+	return int(ClientID), nil
+}
+// ******************************************************************************************
 
 
 func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -123,14 +168,13 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Printf("Успешная авторизация: ID пользователя: %d, IP: %s, Номер телефона: %s", idUsers, ipAddress, phone)
+		log.Printf("Успешная авторизация: ID пользователя: %d, IP: %s, Номер телефона: %s", client.ClientID, ipAddress, phone)
 
 		token, err := GenerationJWT(idUsers)
 		if err != nil {
 			http.Error(w, "Ошибка генерации токена", http.StatusInternalServerError)
 			return
 		}
-
 		http.SetCookie(w, &http.Cookie{
 			Name:     "jwt_token",
 			Value:    token,
@@ -138,262 +182,9 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 			HttpOnly: true,
 		})
 
-		http.ServeFile(w, r, "alinf.html")
+		http.ServeFile(w, r, "allinf.html")
     }
 }
-
-
-
-
-
-
-var jwtSecretKey = []byte("KlN621!")
-
-func GenerationJWT(ClientID int) (string, error){
-	JwtData := jwt.MapClaims{
-		"id_users": ClientID,
-		"expirationTime":  time.Now().Add(24 * time.Hour).Unix(), // Время истечения токена
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JwtData)
-	return token.SignedString(jwtSecretKey)
-}
-
-func CheckJwtToken(tokenStr string)(int, error){
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error){
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok{
-			return nil, fmt.Errorf("неправильный метод подписи")
-		}
-		return jwtSecretKey, nil
-	})
-	if err != nil || !token.Valid {
-		return 0, fmt.Errorf("невалидный токен")
-	}
-
-	TokenData, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return 0, fmt.Errorf("не удалось получить данные из токена")
-	}
-
-	ClientID, ok := TokenData["id_users"].(float64)
-	if !ok {
-		return 0, fmt.Errorf("не удалось получить ID пользователя из токена")
-	}
-	return int(ClientID), nil
-}
-
-type UserData struct {
-    ID          int
-    Surname     string
-    Name        string
-    MiddleName  string
-    PhoneNumber string
-    Email       string
-    TimeCreated string
-}
-
-func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodGet {
-        http.Error(w, "Неверный метод запроса", http.StatusMethodNotAllowed)
-        return
-    }
-
-    ipAddress := strings.Split(r.RemoteAddr, ":")[0]
-
-    cookie, err := r.Cookie("jwt_token")
-    if err != nil || cookie.Value == "" {
-        log.Printf("JWT-токен не найден, редирект на страницу входа")
-        http.Redirect(w, r, "/login", http.StatusFound)
-        return
-    }
-
-    idUsers, err := CheckJwtToken(cookie.Value) 
-    if err != nil {
-        log.Printf("Ошибка проверки токена: %v", err)
-        http.Redirect(w, r, "/login", http.StatusFound)
-        return
-    }
-
-    s.clientsMu.Lock()
-    client, exists := s.clients[ipAddress]
-    s.clientsMu.Unlock()
-    if !exists || !client.Active {
-        log.Printf("Клиент с IP: %s и id_users: %d неактивен", ipAddress, idUsers)
-        http.Error(w, "Ваш аккаунт не активен", http.StatusForbidden)
-        return
-    }
-
-    // Запрос данных о пользователе по id_users
-    userData, err := getUserDataByID(db, idUsers)
-    if err != nil {
-        log.Printf("Ошибка при извлечении данных пользователя: %v", err)
-        http.Error(w, "Ошибка при извлечении данных пользователя", http.StatusInternalServerError)
-        return
-    }
-
-    data := struct {
-        Username  string
-        UserData  UserData
-        Token     string
-    }{
-        Username: userData.Name,
-        UserData: userData,
-        Token:    cookie.Value,
-    }
-
-    tmpl, err := template.ParseFiles("alinf.html")
-    if err != nil {
-        log.Printf("Ошибка при парсинге шаблона: %v", err)
-        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
-        return
-    }
-
-    err = tmpl.Execute(w, data)
-    if err != nil {
-        log.Printf("Ошибка при рендеринге шаблона: %v", err)
-		return
-    }
-}
-
-
-func getUserDataByID(db *sql.DB, idUsers int) (UserData, error) {
-    var userData UserData
-    query := `SELECT id_users, surname, name, middle_name, phone_number, email, time_created 
-				FROM users WHERE id_users = $1`
-    err := db.QueryRow(query, idUsers).Scan(&userData.ID, &userData.Surname, &userData.Name, 
-										&userData.MiddleName, &userData.PhoneNumber, 
-										&userData.Email, &userData.TimeCreated)
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return UserData{}, fmt.Errorf("пользователь не найден")
-        }
-        return UserData{}, fmt.Errorf("ошибка при извлечении данных: %v", err)
-    }
-    return userData, nil
-}
-
-
-
-
-
-// func (s *Server) HandleSettings(w http.ResponseWriter, r *http.Request) {
-//     if r.Method != http.MethodPost {
-//         http.Error(w, "Неверный метод запроса", http.StatusMethodNotAllowed)
-//         return
-//     }
-//     cookie, err := r.Cookie("jwt_token")
-//     if err != nil || cookie.Value == "" {
-//         http.Error(w, "Токен авторизации не найден", http.StatusUnauthorized)
-//         return
-//     }
-//     idUsers, err := CheckJwtToken(cookie.Value)
-//     if err != nil {
-//         http.Error(w, "Неверный токен авторизации", http.StatusUnauthorized)
-//         return
-//     }
-//     r.ParseForm()
-//     surname := r.FormValue("surname")
-//     name := r.FormValue("name")
-//     middleName := r.FormValue("middle_name")
-//     phone := r.FormValue("phone_number")
-//     email := r.FormValue("email")
-//     query := `UPDATE users SET surname=$1, name=$2, middle_name=$3, phone_number=$4, email=$5 WHERE id_users=$6`
-//     _, err = db.Exec(query, surname, name, middleName, phone, email, idUsers)
-//     if err != nil {
-//         log.Printf("Ошибка обновления данных пользователя: %v", err)
-//         http.Error(w, "Ошибка обновления данных", http.StatusInternalServerError)
-//         return
-//     }
-//     log.Printf("Пользователь ID %d успешно обновил данные", idUsers)
-//     w.Write([]byte("Данные успешно обновлены"))
-// }
-
-
-func (s *Server) HandleSettings(w http.ResponseWriter, r *http.Request) {
-    // Обработка GET-запроса (отображение страницы настроек)
-    if r.Method == http.MethodGet {
-        cookie, err := r.Cookie("jwt_token")
-        if err != nil || cookie.Value == "" {
-            http.Error(w, "Токен авторизации не найден", http.StatusUnauthorized)
-            return
-        }
-
-        idUsers, err := CheckJwtToken(cookie.Value)
-        if err != nil {
-            http.Error(w, "Неверный токен авторизации", http.StatusUnauthorized)
-            return
-        }
-
-        userData, err := getUserDataByID(db, idUsers)
-        if err != nil {
-            log.Printf("Ошибка при извлечении данных пользователя: %v", err)
-            http.Error(w, "Ошибка при извлечении данных пользователя", http.StatusInternalServerError)
-            return
-        }
-
-        data := struct {
-            Username  string
-            UserData  UserData
-            Token     string
-        }{
-            Username: userData.Name,
-            UserData: userData,
-            Token:    cookie.Value,
-        }
-
-        tmpl, err := template.ParseFiles("settings.html")
-        if err != nil {
-            log.Printf("Ошибка при парсинге шаблона: %v", err)
-            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
-            return
-        }
-
-        err = tmpl.Execute(w, data)
-        if err != nil {
-            log.Printf("Ошибка при рендеринге шаблона: %v", err)
-            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
-            return
-        }
-    }
-
-    // Обработка POST-запроса (обновление данных пользователя)
-    if r.Method == http.MethodPost {
-        cookie, err := r.Cookie("jwt_token")
-        if err != nil || cookie.Value == "" {
-            http.Error(w, "Токен авторизации не найден", http.StatusUnauthorized)
-            return
-        }
-
-        idUsers, err := CheckJwtToken(cookie.Value)
-        if err != nil {
-            http.Error(w, "Неверный токен авторизации", http.StatusUnauthorized)
-            return
-        }
-
-        r.ParseForm()
-        surname := r.FormValue("surname")
-        name := r.FormValue("name")
-        middleName := r.FormValue("middle_name")
-        phone := r.FormValue("phone_number")
-        email := r.FormValue("email")
-
-        query := `UPDATE users 
-				SET surname=$1, name=$2, middle_name=$3, phone_number=$4, email=$5 
-				WHERE id_users=$6`
-        _, err = db.Exec(query, surname, name, middleName, phone, email, idUsers)
-        if err != nil {
-            log.Printf("Ошибка обновления данных пользователя: %v", err)
-            http.Error(w, "Ошибка обновления данных", http.StatusInternalServerError)
-            return
-        }
-
-        log.Printf("Пользователь ID %d успешно обновил данные", idUsers)
-        w.Write([]byte("Данные успешно обновлены"))
-    }
-}
-
-
-
-// ??????????????????????????????????????????????????????????????????????????????????????????
 
 func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	ip := strings.Split(r.RemoteAddr, ":")[0]
@@ -458,6 +249,12 @@ func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		_, err = db.Exec("INSERT INTO users (phone_number, surname, name, middle_name, email, hashed_password) VALUES ($1, $2, $3, $4, $5, $6)",
 			phone, surname, name, middleName, email, hashedPassword)
 		if err != nil {
+			if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+				log.Printf("Ошибка: email уже зарегистрирован: %v", err)
+				http.Error(w, "Этот email уже зарегистрирован", http.StatusBadRequest)
+				return
+			}
+
 			log.Printf("Ошибка при вставке в базу данных: %v", err)
 			http.Error(w, "Ошибка при регистрации", http.StatusInternalServerError)
 			return
@@ -468,7 +265,244 @@ func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ??????????????????????????????????????????????????????????????????????????????????????????
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+func (s *Server) HandleSettingsAndUpdate(w http.ResponseWriter, r *http.Request) { 
+    cookie, err := r.Cookie("jwt_token")
+    if err != nil || cookie.Value == "" {
+        log.Printf("JWT-токен не найден, редирект на страницу входа")
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
+    }
+
+    idUsers, err := CheckJwtToken(cookie.Value)
+    if err != nil {
+        log.Printf("Ошибка проверки токена: %v", err)
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
+    }
+
+    ipAddress := strings.Split(r.RemoteAddr, ":")[0]
+	s.clientsMu.Lock()
+	client, exists := s.clients[ipAddress]
+	s.clientsMu.Unlock()
+	if !exists || !client.Active {
+		log.Printf("Клиент с IP: %s и id_users: %d неактивен", ipAddress, idUsers)
+		http.Error(w, "Ваш аккаунт не активен", http.StatusForbidden)
+		return
+	}
+
+    if r.Method == http.MethodGet {
+
+
+        log.Printf("Пользователь с ID %d и IP %s перешел на страницу изменений данных", client.ClientID, ipAddress)
+
+
+        user, err := getUserDataByID(db, idUsers)
+        if err != nil {
+            log.Printf("Ошибка при получении данных пользователя: %v", err)
+            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+            return
+        }
+        data := struct {
+            Username  string
+            UserData  UserData
+            Token     string
+        }{
+            Username: user.Name,
+            UserData: user,
+            Token:    cookie.Value,
+        }
+
+        tmpl, err := template.ParseFiles("settings.html")
+        if err != nil {
+            log.Printf("Ошибка при загрузке шаблона: %v", err)
+            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+            return
+        }
+        err = tmpl.Execute(w, data)
+        if err != nil {
+            log.Printf("Ошибка при рендеринге шаблона: %v", err)
+            return 
+        }
+    }
+
+    if r.Method == http.MethodPost {
+        surname := r.FormValue("surname")
+        name := r.FormValue("name")
+        middleName := r.FormValue("middle_name")
+        email := r.FormValue("email")
+        password := r.FormValue("password")
+
+        if surname == "" || name == "" || middleName == "" || email == "" || password == "" {
+            http.Error(w, "Пожалуйста, заполните все поля", http.StatusBadRequest)
+            return
+        }
+
+        var existingEmail string
+        query := `SELECT email FROM users WHERE email = $1 AND id_users != $2`
+        err := db.QueryRow(query, email, idUsers).Scan(&existingEmail)
+        if err == nil {
+            http.Error(w, "Email уже используется другим пользователем", http.StatusBadRequest)
+            return
+        } else if err != sql.ErrNoRows {
+            log.Printf("Ошибка при проверке email: %v", err)
+            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+            return
+        }
+
+        err = UpdateUserData(db, idUsers, surname, name, middleName, email, password)
+        if err != nil {
+            log.Printf("Ошибка при обновлении данных пользователя: %v", err)
+            http.Error(w, "Ошибка обновления данных", http.StatusInternalServerError)
+            return
+        }
+
+        log.Printf("Пользователь с ID %d и IP %s обновил свои данные", client.ClientID, ipAddress)
+
+        newToken, err := GenerationJWT(idUsers)
+        if err != nil {
+            log.Printf("Ошибка при генерации нового токена: %v", err)
+            http.Error(w, "Ошибка обновления данных", http.StatusInternalServerError)
+            return
+        }
+        http.SetCookie(w, &http.Cookie{
+            Name:     "jwt_token",
+            Value:    newToken,
+            HttpOnly: true,
+            SameSite: http.SameSiteStrictMode,
+        })
+
+        http.Redirect(w, r, "/allinf", http.StatusFound)
+        return
+    }
+}
+
+func UpdateUserData(db *sql.DB, idUsers int, surname, name, middleName, email, password string) error {
+    hashedPassword, err := HashPassword(password)
+    if err != nil {
+        return fmt.Errorf("ошибка хеширования пароля: %v", err)
+    }
+
+    query := `UPDATE users SET surname=$1, name=$2, middle_name=$3, email=$4, hashed_password=$5 WHERE id_users=$6`
+    _, err = db.Exec(query, surname, name, middleName, email, hashedPassword, idUsers)
+    if err != nil {
+        return fmt.Errorf("ошибка при обновлении данных пользователя: %v", err)
+    }
+
+    return nil
+}
+
+
+
+
+
+func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) { 
+    if r.Method != http.MethodGet {
+        http.Error(w, "Неверный метод запроса", http.StatusMethodNotAllowed)
+        return
+    }
+
+    ipAddress := strings.Split(r.RemoteAddr, ":")[0]
+
+    cookie, err := r.Cookie("jwt_token")
+    if err != nil || cookie.Value == "" {
+        log.Printf("JWT-токен не найден, редирект на страницу входа")
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
+    }
+
+    idUsers, err := CheckJwtToken(cookie.Value) 
+    if err != nil {
+        log.Printf("Ошибка проверки токена: %v", err)
+        http.Redirect(w, r, "/login", http.StatusFound)
+        return
+    }
+
+    s.clientsMu.Lock()
+    client, exists := s.clients[ipAddress]
+    s.clientsMu.Unlock()
+    if !exists || !client.Active {
+        log.Printf("Клиент с IP: %s и id_users: %d неактивен", ipAddress, idUsers)
+        http.Error(w, "Ваш аккаунт не активен", http.StatusForbidden)
+        return
+    }
+    log.Printf("Пользователь с ID %d и IP %s перешел на главную страницу с объявлениями", client.ClientID, ipAddress)
+
+
+    userData, err := getUserDataByID(db, idUsers)
+    if err != nil {
+        log.Printf("Ошибка при извлечении данных пользователя: %v", err)
+        http.Error(w, "Ошибка при извлечении данных пользователя", http.StatusInternalServerError)
+        return
+    }
+
+    data := struct {
+        Username  string
+        UserData  UserData
+        Token     string
+    }{
+        Username: userData.Name,
+        UserData: userData,
+        Token:    cookie.Value,
+    }
+
+    tmpl, err := template.ParseFiles("allinf.html")
+    if err != nil {
+        log.Printf("Ошибка при парсинге шаблона: %v", err)
+        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+        return
+    }
+
+    err = tmpl.Execute(w, data)
+    if err != nil {
+        log.Printf("Ошибка при рендеринге шаблона: %v", err)
+		return
+    }
+}
+
+func getUserDataByID(db *sql.DB, idUsers int) (UserData, error) {
+    var userData UserData
+    query := `SELECT id_users, surname, name, middle_name, phone_number, email, time_created 
+				FROM users WHERE id_users = $1`
+    err := db.QueryRow(query, idUsers).Scan(&userData.ID, &userData.Surname, &userData.Name, 
+										&userData.MiddleName, &userData.PhoneNumber, 
+										&userData.Email, &userData.TimeCreated)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return UserData{}, fmt.Errorf("пользователь не найден")
+        }
+        return UserData{}, fmt.Errorf("ошибка при извлечении данных: %v", err)
+    }
+    return userData, nil
+}
+
+
+
+
 
 func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	ipAddress := strings.Split(r.RemoteAddr, ":")[0]
@@ -504,8 +538,8 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 func (s *Server) HandleLeave(w http.ResponseWriter, r *http.Request) {
 	ipAddress := strings.Split(r.RemoteAddr, ":")[0]
 	s.clientsMu.Lock()
@@ -564,8 +598,8 @@ func (s *Server) CheckClientStatus() {
 		s.clientsMu.Unlock()
 	}
 }
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 func CreateAndStartServer(templatePath, ip, port string) *Server {
 	htmlTmpl, err := template.ParseFiles(templatePath)
@@ -584,9 +618,10 @@ func CreateAndStartServer(templatePath, ip, port string) *Server {
 	http.HandleFunc("/heartbeat", server.HandleHeartbeat)
 	http.HandleFunc("/login", server.HandleLogin)
 	http.HandleFunc("/register", server.HandleRegister)
-	http.HandleFunc("/alinf", server.HandleInfo)
-	http.HandleFunc("/settings", server.HandleSettings)
-	
+	http.HandleFunc("/allinf", server.HandleInfo)
+	http.HandleFunc("/settings", server.HandleSettingsAndUpdate)
+	http.HandleFunc("/update_inf", server.HandleSettingsAndUpdate)
+
 
 	// go server.CheckClientStatus()
 
@@ -607,5 +642,5 @@ func main() {
 	}
 
 	defer db.Close()
-	CreateAndStartServer("HomePage.html", "192.168.0.125", "8080")
+	CreateAndStartServer("HomePage.html", "192.168.244.47", "8080")
 }
