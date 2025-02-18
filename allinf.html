@@ -6,48 +6,266 @@
     <title>АвтоНск - Поиск автомобилей в Новосибирске</title>
 
     <style>
-        .profile-card {
-            position: relative;
+
+        /* Прямоугольник с автомобилями и т.д */
+        .car-counts {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f7f7f7; 
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); 
+        }
+        .car-counts h3 {
+            font-size: 20px;
+            color: #444; 
+            margin-bottom: 15px;
+        }
+        .car-brand-name {
+            color: black; 
+        }
+        .car-count-link {
+            text-decoration: none; 
+        }
+        .car-count {
+            color: #007bff; 
+            font-weight: bold;
+            cursor: pointer; 
+        }
+        .car-count-link:hover .car-count {
+            text-decoration: underline; 
+        }
+    
+
+        /* Форма с фильтрами  */
+        .filter-section { 
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #f4f4f4;
+            padding: 20px;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .filter-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        .filter-field {
+            flex: 1 1 23%;
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .filter-field label {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        /* Отображение ползунков */
+        .filter-field input[type="text"], .filter-field input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+        .filter-field input[type="range"] {
+            display: none;
+        }
+        .filter-field input[type="text"]:focus + input[type="range"],
+        .filter-field input[type="range"]:hover {
             display: inline-block;
         }
 
+        /* Кнопки внутри формы  */
+        .filter-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .reset-btn, .search-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .reset-btn {
+            background-color: #ccc;
+        }
+        .search-btn {
+            background-color: #007BFF;
+            color: white;
+        }
+        .search-btn:hover {
+            background-color: #0056b3;
+        }
+        .reset-btn:hover {
+            background-color: #999;
+        }
+        .error {
+            border: 2px solid #ff4d4d;
+            background-color: #ffe6e6;
+        }
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .filter-row {
+                flex-direction: column;
+            }
+
+            .filter-row input {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .filter-buttons {
+                flex-direction: column;
+            }
+
+            .reset-btn, .search-btn {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+
+
+        /* Список автомобилей */
+        .car-list {
+            margin-top: 20px;
+        }
+        .car-list .car-item {
+            border: 1px solid #e0e0e0; /* Легкая граница */
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); /* Очень легкая тень */
+        }
+        .car-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .car-info h4 {
+            margin: 0;
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333; /* Темно-серый */
+        }
+        .car-info p {
+            margin: 0;
+            font-size: 1.1em;
+            color: #555; /* Более мягкий серый цвет */
+        }
+        .car-info button {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 10px 20px;
+            background-color: #0077b5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .car-info button:hover {
+            background-color: #005f8f; /* Тот же темный оттенок синего */
+        }
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 90%;
+            }
+        }
+
+        /* Модальное окно об информации о машине */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 420px;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 90%; 
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+            transition: color 0.3s ease;
+        }
+        .close-btn:hover {
+            color: #444; 
+        }
+
+        /* Карточка профиля */
+        .profile-card {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
         .profile-options {
-            display: none; 
+            display: none;
             position: absolute;
             background-color: #fff;
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
             padding: 10px;
             top: 100%;
             left: 0;
             min-width: 200px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             z-index: 10;
+            border-radius: 6px;
         }
-
         .profile-options button {
             width: 100%;
             padding: 10px;
-            background-color: #0057b8;
+            background-color: #0077b5; 
             color: white;
             border: none;
             text-align: center;
             border-radius: 6px;
             cursor: pointer;
-            transition: 0.3s;
+            transition: background-color 0.3s ease;
         }
-
         .profile-options button:hover {
-            background-color: #004799; 
+            background-color: #005f8f; 
         }
 
-        .profile-card h2 {
-            cursor: pointer;
-        }
+
+
     </style>
-    
+
 </head>
 <body>
     <main>
+
         <div class="profile-card">
             <h2 tabindex="0">{{ .Username }}</h2>
 
@@ -56,24 +274,140 @@
                 <button onclick="logout()">Выйти</button>
             </div>
         </div>
+
+        <div class="car-counts">
+            <h3>Количество автомобилей по маркам</h3>
+            {{ range $brand, $count := .CarData }}
+                <p>
+                    <strong class="car-brand-name">{{ $brand }}</strong>
+                    <a href="javascript:void(0)" class="car-count-link" data-brand="{{ $brand }}">
+                        <span class="car-count">{{ $count }}</span>
+                    </a>
+                </p>
+            {{ end }}
+        </div>
+
+        <div class="filter-section">
+            <h3>Фильтрация по параметрам</h3>
+            <form id="filter-form" onsubmit="return validateFilters(event)">
+
+                <div class="filter-row">
+                    <div class="filter-field">
+                        <input type="text" id="price-from" name="price-from" placeholder="Цена от, ₽" maxlength="9" oninput="validateNumberInput()">
+                    </div>
+                    <div class="filter-field">
+                        <input type="text" id="price-to" name="price-to" placeholder="Цена до" maxlength="9" oninput="validateNumberInput()">
+                    </div>
+
+                    <label for="engine-volume-from">Объем от:</label>
+                    <div class="filter-field">
+                        <input type="text" id="engine-volume-from" name="engine-volume-from" value="0.8" maxlength="4" oninput="validateDecimalInput()" onclick="toggleSlider('engine-volume-from-slider', 'engine-volume-from')">
+                        <input type="range" id="engine-volume-from-slider" min="0.8" max="28" step="0.1" value="0.8" onchange="updateEngineVolumeFrom()" style="display: none;">
+                    </div>
+                    <label for="engine-volume-to">до:</label>
+                    <div class="filter-field">
+                        <input type="text" id="engine-volume-to" name="engine-volume-to" value="28" maxlength="4" oninput="validateDecimalInput()" onclick="toggleSlider('engine-volume-to-slider', 'engine-volume-to')">
+                        <input type="range" id="engine-volume-to-slider" min="0.8" max="28" step="0.1" value="28" onchange="updateEngineVolumeTo()" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="filter-row">
+                    <div class="filter-field">
+                        <input type="text" id="power-from" name="power-from" placeholder="Мощность от, л.с." maxlength="4" oninput="validateNumberInput()">
+                    </div>
+                    <div class="filter-field">
+                        <input type="text" id="power-to" name="power-to" placeholder="Мощность до" maxlength="4" oninput="validateNumberInput()">
+                    </div>
+
+                    <label for="year-from">Год от:</label>
+                    <div class="filter-field">
+                        <input type="text" id="year-from" name="year-from" value="1970" maxlength="4" oninput="validateNumberInput()" onclick="toggleSlider('year-from-slider', 'year-from')">
+                        <input type="range" id="year-from-slider" min="1970" max="2025" value="1970" onchange="updateYearFrom()" style="display: none;">
+                    </div>
+
+                    <label for="year-to">до:</label>
+                    <div class="filter-field">
+                        <input type="text" id="year-to" name="year-to" value="2025" maxlength="4" oninput="validateNumberInput()" onclick="toggleSlider('year-to-slider', 'year-to')">
+                        <input type="range" id="year-to-slider" min="1970" max="2025" value="2025" onchange="updateYearTo()" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="filter-buttons">
+                    <button type="button" class="reset-btn" onclick="resetFilters()">Сбросить</button>
+                    <button type="submit" class="search-btn">Показать</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="car-list">
+            <h3>Список доступных автомобилей</h3>
+            {{ range .Cars }}
+            <div class="car-item">
+                <div class="car-info">
+                    <h4>{{ .Brand }} {{ .Model }}, {{ .Year }}</h4>
+                    <p>Мощность: {{ .Power }} л.с. Объем двигателя: {{ .EngineVolume }} л</p>
+                    <button onclick="showDetails(      
+
+                        '{{ .Brand }}', '{{ .Model }}', '{{ .Year }}', '{{ .Price }}',
+                        '{{ .Power }}', '{{ .EngineVolume }}', '{{ .Transmission }}',
+                        '{{ .Color }}', '{{ .SellerName }}', '{{ .SellerMiddleName }}', '{{ .SellerPhone }}', '{{ .SellerEmail }}'
+                    )">Подробнее</button>
+                </div>
+            </div>
+            {{ end }}
+        </div>
+
+
     </main>
 
+    <div id="carModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">❌</span>
+            <h3 id="modal-title"></h3>
+            <p><strong>Цена:</strong> <span id="modal-price"></span> Руб</p>
+            <h4>Описание</h4>
+            <p><strong>Год выпуска:</strong> <span id="modal-year"></span></p>
+            <p><strong>Мощность двигателя:</strong> <span id="modal-power"></span> л.с.</p>
+            <p><strong>Объём двигателя:</strong> <span id="modal-engine"></span> л</p>
+            <p><strong>Коробка передач:</strong> <span id="modal-transmission"></span></p>
+            <p><strong>Цвет:</strong> <span id="modal-color"></span></p>
+            <h4>Продавец машины:</h4>
+            <p><span id="modal-seller"></span> <span id="modal-SellerName"></span></p>       
+            <p><strong>Номер телефона:</strong> <span id="modal-phone"></span></p>
+            <p><strong>Почта:</strong> <span id="modal-email"></span></p>
+        </div>
+    </div>
+
     <script>
+
+        function showDetails(brand, model, year, price, power, engineVolume, transmission, color, sellerName, sellerMiddleName, phone, email) {
+            document.getElementById("modal-title").textContent = `Продажа ${brand} ${model}, ${year}`;
+            document.getElementById("modal-price").textContent = price;
+            document.getElementById("modal-year").textContent = year;
+            document.getElementById("modal-power").textContent = power;
+            document.getElementById("modal-engine").textContent = engineVolume;
+            document.getElementById("modal-transmission").textContent = transmission;
+            document.getElementById("modal-color").textContent = color;
+            document.getElementById("modal-seller").textContent = `${sellerName} ${sellerMiddleName}`;
+            document.getElementById("modal-phone").textContent = phone;
+            document.getElementById("modal-email").textContent = email;
+
+            document.getElementById("carModal").style.display = "flex"; // Показать модальное окно
+        }
+        function closeModal() {
+            document.getElementById("carModal").style.display = "none"; 
+        }
+
+
         const profileCard = document.querySelector('.profile-card');
         const profileOptions = document.querySelector('.profile-options');
         const username = document.querySelector('h2');
-
-        // Показывать список при наведении на имя (для десктопа)
         username.addEventListener('mouseenter', () => {
             profileOptions.style.display = 'block'; // Показываем список
         });
-
-        // Показывать список при наведении на выпадающий список
         profileOptions.addEventListener('mouseenter', () => {
             profileOptions.style.display = 'block';
         });
-
-        // Скрывать список, если курсор покидает и имя пользователя, и выпадающий список
         profileCard.addEventListener('mouseleave', () => {
             setTimeout(() => {
                 if (!profileCard.matches(':hover')) {
@@ -81,18 +415,165 @@
                 }
             }, 50); // Задержка 50 мс
         });
-
         document.addEventListener('click', (event) => {
             if (!profileCard.contains(event.target)) {
                 profileOptions.style.display = 'none';
             }
         });
 
+
+        document.querySelectorAll(".car-count-link").forEach(link => {
+            link.addEventListener("click", function () {
+                const brand = this.getAttribute("data-brand");
+                window.location.href = `/specialsearcher?brand=${brand}`;
+            });
+        });
+
+
+        function updateSliderValue(sliderId, inputId) {
+            const slider = document.getElementById(sliderId);
+            const input = document.getElementById(inputId);
+            
+            // Синхронизация ползунка с полем ввода
+            input.value = input.value || slider.value;
+            slider.value = input.value;
+        }
+
+        function toggleSlider(sliderId, inputId) {
+            const slider = document.getElementById(sliderId);
+            const input = document.getElementById(inputId);
+            const isHidden = slider.style.display === 'none';
+
+            if (document.activeSlider && document.activeSlider !== slider) {
+                document.activeSlider.style.display = 'none';
+            }
+
+            if (isHidden) {
+                slider.style.display = 'block';
+                
+                const rect = input.getBoundingClientRect();
+                slider.style.position = 'absolute';
+                slider.style.left = `${rect.left}px`;
+                slider.style.top = `${rect.bottom + window.scrollY + 5}px`;
+
+                // Синхронизируем ширину ползунка с шириной поля ввода
+                slider.style.width = `${rect.width}px`;     
+
+                document.activeSlider = slider;
+            } else {
+                slider.style.display = 'none';
+                document.activeSlider = null;
+            }
+        }
+        document.addEventListener('click', function (event) {
+            if (document.activeSlider) {
+                const activeSlider = document.activeSlider;
+                const clickedElement = event.target;
+
+                // Проверяем, был ли клик вне ползунка и поля ввода
+                if (
+                    clickedElement !== activeSlider &&  
+                    !clickedElement.closest(`#${activeSlider.id}`) &&  
+                    clickedElement !== document.getElementById(activeSlider.id.replace('-slider', '')) && //
+                    !clickedElement.closest('.slider-container')
+                ) {
+                    activeSlider.style.display = 'none'; 
+                    document.activeSlider = null;  
+                }
+            }
+        });
+
+
+        function updateYearFrom() {
+            document.getElementById("year-from").value = document.getElementById("year-from-slider").value;
+        }
+        function updateYearTo() {
+            document.getElementById("year-to").value = document.getElementById("year-to-slider").value;
+        }
+        function updateEngineVolumeFrom() {
+            document.getElementById("engine-volume-from").value = parseFloat(document.getElementById("engine-volume-from-slider").value).toFixed(1);
+        }
+        function updateEngineVolumeTo() {
+            document.getElementById("engine-volume-to").value = parseFloat(document.getElementById("engine-volume-to-slider").value).toFixed(1);
+        }
+
+        function validatePair(fromId, toId, fieldName, isInteger = false) {
+            const fromInput = document.getElementById(fromId);
+            const toInput = document.getElementById(toId);
+
+            const fromValue = isInteger ? parseInt(fromInput.value, 10) : parseFloat(fromInput.value);
+            const toValue = isInteger ? parseInt(toInput.value, 10) : parseFloat(toInput.value);
+
+            if (fromInput.value && !toInput.value) {
+                alert(`Пожалуйста, введите ${fieldName} "до"`);
+                toInput.classList.add('error');
+                return false;
+            } else if (!fromInput.value && toInput.value) {
+                alert(`Пожалуйста, введите ${fieldName} "от"`);
+                fromInput.classList.add('error');
+                return false;
+            }
+
+            if (fromValue > toValue) {
+                alert(`${fieldName} "от" не может быть больше "до"`);
+                fromInput.classList.add('error');
+                toInput.classList.add('error');
+                return false;
+            }
+
+            return true;
+        }
+
+
+
+
+        function validateNumberInput() {
+            const fields = ["price-from", "price-to", "power-from", "power-to", "year-from", "year-to"];
+            
+            fields.forEach(id => {
+                let input = document.getElementById(id);
+                input.value = input.value.replace(/[^0-9]/g, '');
+                
+                if (id.includes("year")) {
+                    let year = parseInt(input.value, 10);
+                    if (year < 1970) input.value = "1970"; 
+                    if (year > 2025) input.value = "2025";
+                }
+            });
+        }
+        function validateDecimalInput() {
+            const fields = ["engine-volume-from", "engine-volume-to"];
+            
+            fields.forEach(id => {
+                let input = document.getElementById(id);
+                input.value = input.value.replace(/[^0-9.]/g, ''); 
+
+                if (input.value) {
+                    let value = parseFloat(input.value);
+                    if (value > 28.0) input.value = "28.0";
+                    if (value < 0.8) input.value = "0.8";
+                }
+                
+                input.value = input.value.replace(/^(\d{1,2})\.(\d{0,1}).*$/, '$1.$2');
+            });
+        }
+
+        function resetFilters() {
+            const fieldsToReset = ["price-from", "price-to", "power-from", "power-to"];
+            fieldsToReset.forEach(id => document.getElementById(id).value = "");
+
+            document.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
+        }
+
+
+
+
+
         function logout() {
             document.cookie = "jwt_token=; Max-Age=0; path=/";
-
             window.location.href = '/login';
         }
+
     </script>
 </body>
 </html>

@@ -85,6 +85,11 @@
         }
     </style>
     <script>
+
+        function letters_conversions(str) { 
+            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+        }
+
         async function submitForm(event) {
             event.preventDefault();
             const phone = document.getElementById('phone').value;
@@ -95,9 +100,6 @@
             const password = document.getElementById('password').value;
             const passwordConfirm = document.getElementById('passwordConfirm').value;
 
-            function letters_conversions(str) { 
-                return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-            }
 
             const capitalizedSurname = letters_conversions(surname);
             const capitalizedName = letters_conversions(name);
@@ -178,6 +180,7 @@
             } catch (error) {
                 alert("Ошибка соединения с сервером");
             }
+            
         }
     </script>
 </head>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты поиска</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .car-list { margin-top: 20px; }
+        .car-item { border-bottom: 1px solid #ddd; padding: 10px; }
+
+        /* Стиль для профиля */
+        .profile-card {
+            position: relative;
+            display: flex;
+            align-items: center; 
+            cursor: pointer;
+            margin-right: 20px;
+        }
+        .profile-card h2 {
+            margin-right: 10px; 
+            font-size: 20px; 
+        }
+        .profile-options {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            top: 100%;
+            left: 0;
+            min-width: 200px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            border-radius: 6px;
+        }
+        .profile-options button {
+            width: 100%;
+            padding: 10px;
+            background-color: #0077b5;
+            color: white;
+            border: none;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .profile-options button:hover {
+            background-color: #005f8f;
+        }
+
+
+        /* Кнопка для перехода на /allinf */
+        .profile-button {
+            padding: 10px 20px;
+            background-color: #005f8f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s ease;
+            text-decoration: none; 
+        }
+        .profile-button:hover {
+            background-color: #004b6a;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="profile-card">
+        <h2 tabindex="0">{{ .Username }}</h2>
+        <a href="/allinf" class="profile-button">Перейти на главную страницу</a>
+        
+        <div class="profile-options">
+            <button onclick="window.location.href = '/settings'">Управление профилем</button>
+            <button onclick="logout()">Выйти</button>
+        </div>
+    </div>
+
+    <h3>Автомобили бренда {{.Brand}}</h3>
+    <div class="car-list">
+        {{ range .Cars }}
+            <div class="car-item">
+                <h4>{{.Brand}} {{.Model}} ({{.Year}})</h4>
+                <p><strong>Цена:</strong> {{.Price}} ₽</p>
+                <p><strong>Мощность:</strong> {{.Power}} л.с.</p>
+                <p><strong>Объём двигателя:</strong> {{.EngineVolume}} л</p>
+                <p><strong>Коробка передач:</strong> {{.Transmission}}</p>
+                <p><strong>Цвет:</strong> {{.Color}}</p>
+                <p><strong>Продавец:</strong> {{.SellerSurname}} {{.SellerName}}</p>
+                <p><strong>Телефон:</strong> {{.SellerPhone}}</p>
+                <p><strong>Email:</strong> {{.SellerEmail}}</p>
+            </div>
+        {{ end }}
+    </div> 
+
+
+    <script>
+
+        const profileCard = document.querySelector('.profile-card');
+        const profileOptions = document.querySelector('.profile-options');
+        const username = document.querySelector('h2');
+        username.addEventListener('mouseenter', () => {
+            profileOptions.style.display = 'block'; // Показываем список
+        });
+        profileOptions.addEventListener('mouseenter', () => {
+            profileOptions.style.display = 'block';
+        });
+        profileCard.addEventListener('mouseleave', () => {
+            setTimeout(() => {
+                if (!profileCard.matches(':hover')) {
+                    profileOptions.style.display = 'none'; 
+                }
+            }, 50); // Задержка 50 мс
+        });
+        document.addEventListener('click', (event) => {
+            if (!profileCard.contains(event.target)) {
+                profileOptions.style.display = 'none';
+            }
+        });
+
+        function logout() {
+            document.cookie = "jwt_token=; Max-Age=0; path=/";
+            window.location.href = '/login';
+        }
+
+    </script>
+</body>
+</html>

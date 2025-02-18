@@ -32,77 +32,33 @@
             max-width: 400px;
         }
 
-        p {
-            font-size: 16px;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        label {
-            font-size: 14px;
-            color: #333;
-            display: block;
-            margin: 10px 0 5px;
+        .editable {
+            color: #0057b8;
+            text-decoration: underline;
+            cursor: pointer;
         }
 
         input {
+            display: none;
             width: 100%;
             padding: 10px;
             font-size: 14px;
             border: 1px solid #ccc;
             border-radius: 6px;
-            margin-bottom: 15px;
+            margin-top: 5px;
             box-sizing: border-box;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-
-        input:focus {
-            border-color: #0057b8;
-            box-shadow: 0 0 5px rgba(0, 87, 184, 0.3);
-            outline: none;
         }
 
         button {
+            margin-top: 10px;
             background-color: #0057b8;
             color: white;
             font-size: 16px;
-            padding: 12px;
+            padding: 10px;
             width: 100%;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #004799;
-        }
-
-        .back-button {
-            background-color: transparent;
-            border: 1px solid #0057b8;
-            color: #0057b8;
-            margin-top: 15px;
-        }
-
-        .back-button:hover {
-            background-color: #0057b8;
-            color: white;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        p.alert {
-            font-size: 14px;
-            color: red;
-            margin-top: 15px;
-        }
-
-        a {
-            color: #0057b8;
-            text-decoration: none;
         }
     </style>
 </head>
@@ -110,41 +66,25 @@
     <h1>Управление профилем</h1>
 
     <div class="container">
-        <p><strong>Фамилия:</strong> {{ .UserData.Surname }}</p>
-        <p><strong>Имя:</strong> {{ .UserData.Name }}</p>
-        <p><strong>Отчество:</strong> {{ .UserData.MiddleName }}</p> 
-        <p><strong>Email:</strong> {{ .UserData.Email }}</p>
+        <p><strong>Фамилия:</strong> <span id="surname-text" class="editable">{{ .UserData.Surname }}</span></p>
+        <input type="text" id="surname" value="{{ .UserData.Surname }}" maxlength="20">
+        
+        <p><strong>Имя:</strong> <span id="name-text" class="editable">{{ .UserData.Name }}</span></p>
+        <input type="text" id="name" value="{{ .UserData.Name }}" maxlength="20">
+        
+        <p><strong>Отчество:</strong> <span id="middleName-text" class="editable">{{ .UserData.MiddleName }}</span></p>
+        <input type="text" id="middleName" value="{{ .UserData.MiddleName }}" maxlength="20">
+        
+        <p><strong>Email:</strong> <span id="email-text" class="editable">{{ .UserData.Email }}</span></p>
+        <input type="email" id="email" value="{{ .UserData.Email }}" maxlength="40">
 
-        <form id="profileForm" method="POST" action="/update_inf">
-            <div class="form-group">
-                <label for="surname">Фамилия:</label>
-                <input type="text" id="surname" name="surname" maxlength="20" required>
-            </div>
+        <p><strong>Пароль:</strong> <button id="change-password-button">Изменить пароль</button></p>
+        <input type="password" id="new-password" placeholder="Новый пароль"  style="display: none;">
+        <input type="password" id="confirm-password" placeholder="Подтвердите пароль"  style="display: none;">
 
-            <div class="form-group">
-                <label for="name">Имя:</label>
-                <input type="text" id="name" name="name" maxlength="20" required>
-            </div>
 
-            <div class="form-group">
-                <label for="middle_name">Отчество:</label> 
-                <input type="text" id="middleName" name="middle_name" maxlength="20" required>
-            </div>
-
-            <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" maxlength="40" required>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Пароль:</label>
-                <input type="password" id="password" name="password" required minlength="5" maxlength="25" title="Пароль должен содержать от 5 до 25 символов">
-            </div>
-
-            <button type="submit">Обновить</button>
-        </form>
-
-        <button class="back-button" onclick="window.location.href='/allinf'">Назад</button>
+        <button id="update-button" style="display:none;">Обновить</button>
+        <button onclick="window.location.href='/allinf'">Назад</button>
     </div>
 
     <script>
@@ -152,40 +92,53 @@
             return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
         }
 
-        const russianRegex = /^[а-яА-ЯёЁ]+$/;  
-        const englishRegex = /^[a-zA-Z]+$/;  
+        const russianRegex = /^[а-яА-ЯёЁ]+$/;
+        const englishRegex = /^[a-zA-Z]+$/;
+        const allowedEmailDomains = new Set([
+            'gmail.com', 'yahoo.com', 'mail.ru', 'yandex.ru', 'icloud.com',  
+            'outlook.com', 'rambler.ru', 'hotmail.com', 'list.ru', 'bk.ru', 'inbox.ru', 'ya.ru', 'microsoft.com'
+        ]);
 
-        function checkSameAlphabet(str) {
-            return russianRegex.test(str) || englishRegex.test(str);
+        function toggleInput(field) {
+            const textElement = document.getElementById(`${field}-text`);
+            const inputElement = document.getElementById(field);
+            textElement.style.display = "none";
+            inputElement.style.display = "block";
+            inputElement.focus();
+            document.getElementById("update-button").style.display = "block";
         }
 
-        const profileForm = document.getElementById('profileForm');
-        profileForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
+        document.querySelectorAll(".editable").forEach(el => {
+            el.addEventListener("click", function() {
+                toggleInput(this.id.replace("-text", ""));
+            });
+        });
 
-            const surname = document.getElementById('surname').value;
-            const name = document.getElementById('name').value;
-            const middleName = document.getElementById('middleName').value; 
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+        document.getElementById("change-password-button").addEventListener("click", function() {
+            document.getElementById("new-password").style.display = "block";
+            document.getElementById("confirm-password").style.display = "block";
+            this.style.display = "none";
+            document.getElementById("update-button").style.display = "block";
+        });
+
+        document.getElementById("update-button").addEventListener("click", async function() {
+            const surname = document.getElementById("surname").value;
+            const name = document.getElementById("name").value;
+            const middleName = document.getElementById("middleName").value;
+            const email = document.getElementById("email").value;
+            const newPassword = document.getElementById("new-password").value;
+            const confirmPassword = document.getElementById("confirm-password").value;
 
             const capitalizedSurname = letters_conversions(surname);
             const capitalizedName = letters_conversions(name);
             const capitalizedMiddleName = letters_conversions(middleName);
 
-            if (!checkSameAlphabet(capitalizedSurname) || !checkSameAlphabet(capitalizedName) || !checkSameAlphabet(capitalizedMiddleName)) {
-                alert('Фамилия, имя и отчество должны содержать только буквы одного алфавита (либо только русские, либо только английские)');
+            if ((!russianRegex.test(capitalizedSurname) && !englishRegex.test(capitalizedSurname)) ||
+                (!russianRegex.test(capitalizedName) && !englishRegex.test(capitalizedName)) ||
+                (!russianRegex.test(capitalizedMiddleName) && !englishRegex.test(capitalizedMiddleName))) {
+                alert('ФИО должно содержать буквы одного алфавита');
                 return;
             }
-
-            document.getElementById('surname').value = capitalizedSurname;
-            document.getElementById('name').value = capitalizedName;
-            document.getElementById('middleName').value = capitalizedMiddleName;
-
-            const allowedEmailDomains = new Set([ 
-                'gmail.com', 'yahoo.com', 'mail.ru', 'yandex.ru', 'icloud.com',  
-                'outlook.com', 'rambler.ru', 'hotmail.com', 'list.ru', 'bk.ru', 'inbox.ru', 'ya.ru', 'microsoft.com'
-            ]);
 
             if (!email.includes('@')) {
                 alert('Email должен содержать символ @');
@@ -193,24 +146,34 @@
             }
 
             const [localPart, emailDomain] = email.split('@');
-            const localPartRegex = /^[a-zA-Z0-9]+$/;
-
-            if (!localPart.match(localPartRegex)) {
+            if (!/^[a-zA-Z0-9]+$/.test(localPart)) {
                 alert('Адрес почты должен содержать только английские буквы и цифры');
                 return;
             }
 
             if (!allowedEmailDomains.has(emailDomain)) {
-                alert(`Email должен быть с одним из следующих доменов: ${Array.from(allowedEmailDomains).join(', ')}`);
+                alert(`Email должен быть с одного из доменов: ${Array.from(allowedEmailDomains).join(', ')}`);
                 return;
             }
 
+            // Проверка паролей
+            if (newPassword || confirmPassword) { 
+                if (newPassword !== confirmPassword) {
+                    alert("Пароли не совпадают!");
+                    return;
+                }
+            }
+
+            // Формирование данных для отправки
             const formData = new FormData();
             formData.append("surname", capitalizedSurname);
             formData.append("name", capitalizedName);
             formData.append("middle_name", capitalizedMiddleName); 
             formData.append("email", email);
-            formData.append("password", password);
+
+            if (newPassword) {
+                formData.append("password", newPassword);
+            }
 
             try {
                 const response = await fetch("/update_inf", {
@@ -220,15 +183,16 @@
 
                 if (response.ok) {
                     alert("Данные обновлены успешно!");
-                    window.location.href = "/allinf";
+                    window.location.reload();
                 } else {
                     const errorMessage = await response.text();
-                    alert(errorMessage); 
+                    alert(errorMessage);
                 }
             } catch (error) {
                 alert("Ошибка соединения с сервером");
             }
         });
     </script>
+
 </body>
 </html>

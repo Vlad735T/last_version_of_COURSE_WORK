@@ -54,6 +54,23 @@ type UserData struct {
     TimeCreated string
 }
 
+type Car struct {
+    ID            int
+    Brand         string
+    Model         string
+    Year          int
+    EngineVolume  float64
+    Power         int
+    Transmission  string
+    Color         string
+    Price         int
+    SellerID      int
+    SellerName    string
+    SellerPhone   string
+    SellerEmail   string
+    SellerSurname string  
+    SellerMiddleName string 
+}
 type Server struct {
 	clients            map[string]ClientInfo
 	nextID             int
@@ -75,7 +92,6 @@ func GenerationJWT(ClientID int) (string, error){
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, JwtData)
 	return token.SignedString(jwtSecretKey)
 }
-
 func CheckJwtToken(tokenStr string)(int, error){
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error){
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok{
@@ -99,7 +115,6 @@ func CheckJwtToken(tokenStr string)(int, error){
 	return int(ClientID), nil
 }
 // ******************************************************************************************
-
 
 func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
     ipAddress := strings.Split(r.RemoteAddr, ":")[0]
@@ -134,7 +149,6 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
         http.ServeFile(w, r, "login.html")
         return
     }
-
     if r.Method == http.MethodPost {
 		phone := r.FormValue("phone_number")
 		password := r.FormValue("password")
@@ -266,30 +280,6 @@ func (s *Server) HandleRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 func (s *Server) HandleSettingsAndUpdate(w http.ResponseWriter, r *http.Request) { 
     cookie, err := r.Cookie("jwt_token")
     if err != nil || cookie.Value == "" {
@@ -317,9 +307,7 @@ func (s *Server) HandleSettingsAndUpdate(w http.ResponseWriter, r *http.Request)
 
     if r.Method == http.MethodGet {
 
-
         log.Printf("Пользователь с ID %d и IP %s перешел на страницу изменений данных", client.ClientID, ipAddress)
-
 
         user, err := getUserDataByID(db, idUsers)
         if err != nil {
@@ -350,58 +338,68 @@ func (s *Server) HandleSettingsAndUpdate(w http.ResponseWriter, r *http.Request)
         }
     }
 
-    if r.Method == http.MethodPost {
-        surname := r.FormValue("surname")
-        name := r.FormValue("name")
-        middleName := r.FormValue("middle_name")
-        email := r.FormValue("email")
-        password := r.FormValue("password")
+	if r.Method == http.MethodPost {
+		surname := r.FormValue("surname")
+		name := r.FormValue("name")
+		middleName := r.FormValue("middle_name")
+		email := r.FormValue("email")
+		password := r.FormValue("password") 
 
-        if surname == "" || name == "" || middleName == "" || email == "" || password == "" {
-            http.Error(w, "Пожалуйста, заполните все поля", http.StatusBadRequest)
-            return
-        }
+		if surname == "" || name == "" || middleName == "" || email == "" {
+			http.Error(w, "Пожалуйста, заполните все поля", http.StatusBadRequest)
+			return
+		}
 
-        var existingEmail string
-        query := `SELECT email FROM users WHERE email = $1 AND id_users != $2`
-        err := db.QueryRow(query, email, idUsers).Scan(&existingEmail)
-        if err == nil {
-            http.Error(w, "Email уже используется другим пользователем", http.StatusBadRequest)
-            return
-        } else if err != sql.ErrNoRows {
-            log.Printf("Ошибка при проверке email: %v", err)
-            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
-            return
-        }
+		var existingEmail string
+		query := `SELECT email FROM users WHERE email = $1 AND id_users != $2`
+		err := db.QueryRow(query, email, idUsers).Scan(&existingEmail)
+		if err == nil {
+			http.Error(w, "Email уже используется другим пользователем", http.StatusBadRequest)
+			return
+		} else if err != sql.ErrNoRows {
+			log.Printf("Ошибка при проверке email: %v", err)
+			http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+			return
+		}
 
-        err = UpdateUserData(db, idUsers, surname, name, middleName, email, password)
-        if err != nil {
-            log.Printf("Ошибка при обновлении данных пользователя: %v", err)
-            http.Error(w, "Ошибка обновления данных", http.StatusInternalServerError)
-            return
-        }
+		// Проверка, нужно ли обновлять пароль
+		if password != "" {
+			err = UpdateUserDataWithPassword(db, idUsers, surname, name, middleName, email, password)
+		} else {
+			err = UpdateUserDataWithoutPassword(db, idUsers, surname, name, middleName, email)
+		}
 
-        log.Printf("Пользователь с ID %d и IP %s обновил свои данные", client.ClientID, ipAddress)
+		if err != nil {
+			log.Printf("Ошибка при обновлении данных пользователя: %v", err)
+			http.Error(w, "Ошибка обновления данных", http.StatusInternalServerError)
+			return
+		}
 
-        newToken, err := GenerationJWT(idUsers)
-        if err != nil {
-            log.Printf("Ошибка при генерации нового токена: %v", err)
-            http.Error(w, "Ошибка обновления данных", http.StatusInternalServerError)
-            return
-        }
-        http.SetCookie(w, &http.Cookie{
-            Name:     "jwt_token",
-            Value:    newToken,
-            HttpOnly: true,
-            SameSite: http.SameSiteStrictMode,
-        })
+		log.Printf("Пользователь с ID %d и IP %s обновил свои данные", client.ClientID, ipAddress)
 
-        http.Redirect(w, r, "/allinf", http.StatusFound)
-        return
-    }
+		newToken, err := GenerationJWT(idUsers)
+		if err != nil {
+			log.Printf("Ошибка при генерации нового токена: %v", err)
+			http.Error(w, "Ошибка обновления данных", http.StatusInternalServerError)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "jwt_token",
+			Value:    newToken,
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
+
+		http.Redirect(w, r, "/allinf", http.StatusFound)
+		return
+	}
+
+
+
+
+
 }
-
-func UpdateUserData(db *sql.DB, idUsers int, surname, name, middleName, email, password string) error {
+func UpdateUserDataWithPassword(db *sql.DB, idUsers int, surname, name, middleName, email, password string) error {
     hashedPassword, err := HashPassword(password)
     if err != nil {
         return fmt.Errorf("ошибка хеширования пароля: %v", err)
@@ -415,12 +413,123 @@ func UpdateUserData(db *sql.DB, idUsers int, surname, name, middleName, email, p
 
     return nil
 }
+func UpdateUserDataWithoutPassword(db *sql.DB, idUsers int, surname, name, middleName, email string) error {
+    query := `UPDATE users SET surname=$1, name=$2, middle_name=$3, email=$4 WHERE id_users=$5`
+    _, err := db.Exec(query, surname, name, middleName, email, idUsers)
+    if err != nil {
+        return fmt.Errorf("ошибка при обновлении данных пользователя: %v", err)
+    }
+
+    return nil
+}
 
 
 
 
 
-func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) { 
+
+func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
+	ipAddress := strings.Split(r.RemoteAddr, ":")[0]
+	cookie, err := r.Cookie("jwt_token")
+	if err != nil || cookie.Value == "" {
+		log.Printf("[%s] JWT-токен не найден, редирект на страницу входа", ipAddress)
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+	idUsers, err := CheckJwtToken(cookie.Value)
+	if err != nil {
+		log.Printf("[%s] Ошибка проверки токена: %v", ipAddress, err)
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+    if r.Method == http.MethodGet {  
+        var userData UserData
+        err = db.QueryRow("SELECT surname, name, middle_name, phone_number, email FROM users WHERE id_users = $1", idUsers).
+            Scan(&userData.Surname, &userData.Name, &userData.MiddleName, &userData.PhoneNumber, &userData.Email)
+        if err != nil {
+            log.Printf("[%s] Ошибка получения данных пользователя: %v", ipAddress, err)
+            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+            return
+        }
+
+        brand := r.URL.Query().Get("brand")
+        if brand == "" {
+            http.Error(w, "Не указан бренд", http.StatusBadRequest)
+            return
+        }
+        fmt.Println("Запрос на бренд:", brand)
+
+        query := `SELECT cars.id_car, cars.brand, cars.model, cars.year, cars.engine_volume, cars.power, cars.transmission,
+                    cars.color, cars.price, users.id_users, users.surname, users.name, users.middle_name, users.phone_number, users.email
+                    FROM cars
+                    JOIN users ON cars.id_seller = users.id_users
+                    WHERE LOWER(cars.brand) = LOWER($1);`
+
+        rows, err := db.Query(query, brand)
+        if err != nil {
+            log.Printf("[%s] Ошибка при запросе автомобилей: %v", ipAddress, err)
+            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+            return
+        }
+        defer rows.Close()
+
+        var cars []Car
+        for rows.Next() {
+            var car Car
+            err := rows.Scan(&car.ID, &car.Brand, &car.Model, &car.Year, &car.EngineVolume, &car.Power, &car.Transmission,
+                &car.Color, &car.Price, &car.SellerID, &car.SellerSurname, &car.SellerName, &car.SellerMiddleName,
+                &car.SellerPhone, &car.SellerEmail)
+            if err != nil {
+                log.Printf("[%s] Ошибка обработки данных автомобиля: %v", ipAddress, err)
+                http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+                return
+            }
+            cars = append(cars, car)
+        }
+
+        data := struct {
+            Username string
+            UserData UserData
+            Token    string
+            Cars     []Car
+            Brand    string
+        }{
+            Username: userData.Name,
+            UserData: userData,
+            Token:    cookie.Value,
+            Cars:     cars,
+            Brand:    brand,
+        }
+
+        tmpl, err := template.ParseFiles("specialsearcher.html")
+        if err != nil {
+            log.Printf("[%s] Ошибка загрузки шаблона: %v", ipAddress, err)
+            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+            return
+        }
+
+        err = tmpl.Execute(w, data)
+        if err != nil {
+            log.Printf("[%s] Ошибка рендеринга шаблона: %v", ipAddress, err)
+            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+            return
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet {
         http.Error(w, "Неверный метод запроса", http.StatusMethodNotAllowed)
         return
@@ -435,7 +544,7 @@ func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    idUsers, err := CheckJwtToken(cookie.Value) 
+    idUsers, err := CheckJwtToken(cookie.Value)
     if err != nil {
         log.Printf("Ошибка проверки токена: %v", err)
         http.Redirect(w, r, "/login", http.StatusFound)
@@ -452,7 +561,6 @@ func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
     }
     log.Printf("Пользователь с ID %d и IP %s перешел на главную страницу с объявлениями", client.ClientID, ipAddress)
 
-
     userData, err := getUserDataByID(db, idUsers)
     if err != nil {
         log.Printf("Ошибка при извлечении данных пользователя: %v", err)
@@ -460,14 +568,25 @@ func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    cars, carCounts, err := getCarsAndCounts(db)
+    if err != nil {
+        log.Printf("Ошибка при извлечении данных о машинах: %v", err)
+        http.Error(w, "Ошибка при извлечении данных о машинах", http.StatusInternalServerError)
+        return
+    }
+
     data := struct {
         Username  string
         UserData  UserData
         Token     string
+        CarData   map[string]int
+        Cars      []Car 
     }{
         Username: userData.Name,
         UserData: userData,
         Token:    cookie.Value,
+        CarData:  carCounts,
+        Cars:     cars, 
     }
 
     tmpl, err := template.ParseFiles("allinf.html")
@@ -480,10 +599,41 @@ func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
     err = tmpl.Execute(w, data)
     if err != nil {
         log.Printf("Ошибка при рендеринге шаблона: %v", err)
-		return
     }
 }
+func getCarsAndCounts(db *sql.DB) ([]Car, map[string]int, error) {
+    rows, err := db.Query(`
+        SELECT 
+            cars.id_car, cars.brand, cars.model, cars.year, cars.engine_volume, cars.power,
+            cars.transmission, cars.color, cars.price, cars.id_seller,
+            users.surname, users.name, users.middle_name, users.phone_number, users.email
+        FROM cars
+        JOIN users ON cars.id_seller = users.id_users
+    `)
+    if err != nil {
+        return nil, nil, err
+    }
+    defer rows.Close()
 
+    var cars []Car
+    carCounts := make(map[string]int)
+
+    for rows.Next() {
+        var car Car
+        err := rows.Scan(
+            &car.ID, &car.Brand, &car.Model, &car.Year, &car.EngineVolume, 
+            &car.Power, &car.Transmission, &car.Color, &car.Price, &car.SellerID,
+            &car.SellerSurname, &car.SellerName, &car.SellerMiddleName, &car.SellerPhone, &car.SellerEmail,
+        )
+        if err != nil {
+            return nil, nil, err
+        }
+        cars = append(cars, car)
+        carCounts[car.Brand]++ 
+    }
+
+    return cars, carCounts, nil
+}
 func getUserDataByID(db *sql.DB, idUsers int) (UserData, error) {
     var userData UserData
     query := `SELECT id_users, surname, name, middle_name, phone_number, email, time_created 
@@ -499,9 +649,6 @@ func getUserDataByID(db *sql.DB, idUsers int) (UserData, error) {
     }
     return userData, nil
 }
-
-
-
 
 
 func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
@@ -538,8 +685,8 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 func (s *Server) HandleLeave(w http.ResponseWriter, r *http.Request) {
 	ipAddress := strings.Split(r.RemoteAddr, ":")[0]
 	s.clientsMu.Lock()
@@ -556,7 +703,6 @@ func (s *Server) HandleLeave(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Клиент с IP: %s отключен в %s", ipAddress, client.Disconnected.Format("2006-01-02 15:04:05"))
 	}
 }
-
 func (s *Server) HandleHeartbeat(w http.ResponseWriter, r *http.Request) {
 	ipAddress := strings.Split(r.RemoteAddr, ":")[0]
 	s.clientsMu.Lock()
@@ -576,7 +722,6 @@ func (s *Server) HandleHeartbeat(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Клиент с IP %s не найден", ipAddress)
 	}
 }
-
 func (s *Server) CheckClientStatus() {
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
@@ -598,6 +743,7 @@ func (s *Server) CheckClientStatus() {
 		s.clientsMu.Unlock()
 	}
 }
+
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -621,6 +767,9 @@ func CreateAndStartServer(templatePath, ip, port string) *Server {
 	http.HandleFunc("/allinf", server.HandleInfo)
 	http.HandleFunc("/settings", server.HandleSettingsAndUpdate)
 	http.HandleFunc("/update_inf", server.HandleSettingsAndUpdate)
+	http.HandleFunc("/specialsearcher", server.searchCarsHandler) 
+	
+	// http.HandleFunc("/filter", server.searchHandler) 
 
 
 	// go server.CheckClientStatus()
@@ -629,7 +778,6 @@ func CreateAndStartServer(templatePath, ip, port string) *Server {
 	if err := http.ListenAndServe(ip+":"+port, nil); err != nil {
 		log.Fatalf("Ошибка запуска сервера: %v", err)
 	}
-
 	return server
 }
 
@@ -642,5 +790,5 @@ func main() {
 	}
 
 	defer db.Close()
-	CreateAndStartServer("HomePage.html", "192.168.244.47", "8080")
+	CreateAndStartServer("HomePage.html", "192.168.0.125", "8080")
 }
