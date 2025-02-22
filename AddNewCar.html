@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить автомобиль</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: inline-block;
+            text-align: left;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #f2f2f2; /* Светло-серый цвет */
+            color: #333; /* Темный текст */
+            border: 1px solid #d1d1d1; /* Граница, чтобы кнопка выглядела аккуратно */
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        button:hover {
+            background: #e0e0e0; /* Чуть темнее при наведении */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+    </style>
+</head>
+<body>
+    <h2>Добавление автомобиля</h2>
+    <form id="addCarForm">
+        <label>Марка:</label>
+        <input type="text" id="brand" name="brand" maxlength="20" oninput="validateTextInput(this)" required>
+
+        <label>Модель:</label>
+        <input type="text" id="model" name="model" maxlength="20" oninput="validateModelInput(this)" required>
+
+        <label>Год выпуска:</label>
+        <input type="text" id="year" name="year" maxlength="4" oninput="validateYear(this)" required>
+
+        <label>Цена (₽):</label>
+        <input type="text" id="price" name="price" maxlength="9" oninput="validateNumber(this)" required>
+
+        <label>Объем двигателя (л):</label>
+        <input type="text" id="engineVolume" name="engineVolume" maxlength="4" oninput="validateEngineVolume(this)" required>
+
+        <label>Мощность (л.с.):</label>
+        <input type="text" id="power" name="power" maxlength="4" oninput="validateNumber(this)" required>
+
+        <label>Коробка передач:</label>
+        <input type="text" id="transmission" name="transmission" maxlength="20" oninput="validateTextInput(this)" required>
+
+        <label>Цвет:</label>
+        <input type="text" id="color" name="color" maxlength="20" oninput="validateTextInput(this)" required>
+
+        <button type="button" onclick="addCar()">Добавить</button>
+        <button type="button" class="cancel" onclick="window.location.href='/allinf'">Отмена</button>
+    </form>
+    
+    <script>
+
+        async function addCar() {
+            const form = document.getElementById('addCarForm');
+
+            if (!/^\d{4}$/.test(document.getElementById("year").value)) {
+                alert("Год выпуска должен содержать ровно 4 цифры!");
+                return;
+            }
+            
+            const formData = new FormData(form);
+
+            for (let [key, value] of formData.entries()) {
+                if (!value.trim()) {
+                    alert(`Ошибка: Поле "${document.querySelector(`[name=${key}]`).previousElementSibling.innerText}" не заполнено.`);
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch("/addcar", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert("Автомобиль успешно добавлен!");
+                    window.location.href = "/allinf"; 
+                } else {
+                    const errorMessage = await response.text();
+                    alert(errorMessage);
+                }
+            } catch (error) {
+                alert("Ошибка соединения с сервером");
+            }
+        }
+
+        function validateTextInput(input) {
+            input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё]/g, '');
+        }
+        function validateModelInput(input) {
+            input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё0-9]/g, '');
+        }
+        function validateNumber(input) {
+            input.value = input.value.replace(/\D/g, '');
+            if (input.value.length > 1 && input.value[0] === '0') {
+                input.value = input.value.slice(1);
+            }
+        }
+        function validateEngineVolume(input) {
+            input.value = input.value.replace(/[^0-9.]/g, '');
+            if (input.value.startsWith(".")) {
+                input.value = "0" + input.value;
+            }
+            const dotCount = (input.value.match(/\./g) || []).length;
+            if (dotCount > 1) {
+                input.value = input.value.replace(/\.+$/, '');
+            }
+            if (input.value.startsWith("0") && input.value[1] !== "." && input.value.length > 1) {
+                input.value = input.value.slice(1);
+            }
+            let match = input.value.match(/^(\d{0,2})(\.\d{0,1})?$/);
+            if (!match) {
+                input.value = input.value.slice(0, -1);
+                return;
+            }
+            let num = parseFloat(input.value);
+            if (num > 99.9) {
+                input.value = "99.9";
+            }
+        }
+        function validateYear(input) {
+            input.value = input.value.replace(/\D/g, '');
+            if (input.value.length > 1 && input.value[0] === '0') {
+                input.value = input.value.slice(1);
+            }
+            if (input.value.length === 4) {
+                let year = parseInt(input.value);
+                if (year < 1970) {
+                    input.value = "1970";
+                } else if (year > 2025) {
+                    input.value = "2025";
+                }
+            }
+        }
+
+    </script>
+</body>
+</html>

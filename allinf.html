@@ -224,12 +224,72 @@
             color: #444; 
         }
 
+
+        /* Верхняя панель */
+        .header {
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+            background-color: #333; 
+            color: white; /* Цвет текста */
+            padding: 10px 20px;
+            box-sizing: border-box;
+        }
+        .site-name {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase; 
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+                
+        /* Кнопка "Разместить объявление" */
+        .add-car-btn {
+            background-color: #0077b5;
+            color: white;
+            font-size: 16px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 15px; /* Отступ от профиля */
+            transition: background-color 0.3s ease;
+        }
+        .add-car-btn:hover {
+            background-color: #0077b5;
+        }
+
         /* Карточка профиля */
         .profile-card {
             position: relative;
             display: inline-block;
             cursor: pointer;
+            background-color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-left: 10px; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
         }
+        .profile-card:hover {
+            transform: scale(1.05); 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); 
+        }
+        .username {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .username:hover {
+            color: #0077b5;
+        }
+
+        /* Опции профиля (скрыты по умолчанию) */
         .profile-options {
             display: none;
             position: absolute;
@@ -237,16 +297,20 @@
             border: 1px solid #ddd;
             padding: 10px;
             top: 100%;
-            left: 0;
+            right: 0;
             min-width: 200px;
+            max-width: 100%; 
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             z-index: 10;
             border-radius: 6px;
         }
+        .profile-card:hover .profile-options {
+            display: block;
+        }
         .profile-options button {
             width: 100%;
             padding: 10px;
-            background-color: #0077b5; 
+            background-color: #0077b5;
             color: white;
             border: none;
             text-align: center;
@@ -255,8 +319,10 @@
             transition: background-color 0.3s ease;
         }
         .profile-options button:hover {
-            background-color: #005f8f; 
+            background-color: #005f8f;
         }
+
+
 
 
 
@@ -266,12 +332,19 @@
 <body>
     <main>
 
-        <div class="profile-card">
-            <h2 tabindex="0">{{ .Username }}</h2>
+        <div class="header">
+            <div class="site-name">АвтоНск</div>
 
-            <div class="profile-options">
-                <button onclick="window.location.href = '/settings'">Управление профилем</button>
-                <button onclick="logout()">Выйти</button>
+            <div class="user-profile">
+                <button class="add-car-btn" onclick="window.location.href = '/addcar'">Разместить объявление</button>
+                <div class="profile-card">
+                    <h2 tabindex="0" class="username">{{ .Username }}</h2>
+                    <div class="profile-options">
+                        <button onclick="window.location.href = '/mycar'">Мои объявления</button>
+                        <button onclick="window.location.href = '/settings'">Управление профилем</button>
+                        <button onclick="logout()">Выйти</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -497,6 +570,7 @@
             document.getElementById("engine-volume-to").value = parseFloat(document.getElementById("engine-volume-to-slider").value).toFixed(1);
         }
 
+
         function validatePair(fromId, toId, fieldName, isInteger = false) {
             const fromInput = document.getElementById(fromId);
             const toInput = document.getElementById(toId);
@@ -523,10 +597,6 @@
 
             return true;
         }
-
-
-
-
         function validateNumberInput() {
             const fields = ["price-from", "price-to", "power-from", "power-to", "year-from", "year-to"];
             
@@ -558,14 +628,13 @@
             });
         }
 
+
         function resetFilters() {
             const fieldsToReset = ["price-from", "price-to", "power-from", "power-to"];
             fieldsToReset.forEach(id => document.getElementById(id).value = "");
 
             document.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
         }
-
-
 
 
 

@@ -9,18 +9,57 @@
         .car-list { margin-top: 20px; }
         .car-item { border-bottom: 1px solid #ddd; padding: 10px; }
 
-        /* Стиль для профиля */
+        /* Верхняя панель */
+        .header {
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+            background-color: #333; 
+            color: white;
+            padding: 10px 20px;
+            box-sizing: border-box;
+        }
+        .site-name {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase; 
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+
+
+        /* Карточка профиля */
         .profile-card {
             position: relative;
-            display: flex;
-            align-items: center; 
+            display: inline-block;
             cursor: pointer;
-            margin-right: 20px;
+            background-color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-left: 10px; 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
         }
-        .profile-card h2 {
-            margin-right: 10px; 
-            font-size: 20px; 
+        .profile-card:hover {
+            transform: scale(1.05); 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); 
         }
+        .username {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .username:hover {
+            color: #0077b5;
+        }
+
+
+        /* Опции профиля (скрыты по умолчанию) */
         .profile-options {
             display: none;
             position: absolute;
@@ -28,11 +67,15 @@
             border: 1px solid #ddd;
             padding: 10px;
             top: 100%;
-            left: 0;
+            right: 0;
             min-width: 200px;
+            max-width: 100%; 
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             z-index: 10;
             border-radius: 6px;
+        }
+        .profile-card:hover .profile-options {
+            display: block;
         }
         .profile-options button {
             width: 100%;
@@ -66,19 +109,24 @@
             background-color: #004b6a;
         }
 
+
     </style>
 </head>
 <body>
 
-    <div class="profile-card">
-        <h2 tabindex="0">{{ .Username }}</h2>
-        <a href="/allinf" class="profile-button">Перейти на главную страницу</a>
-        
-        <div class="profile-options">
-            <button onclick="window.location.href = '/settings'">Управление профилем</button>
-            <button onclick="logout()">Выйти</button>
+    <div class="header">
+        <div class="site-name">АвтоНск</div>
+        <div class="user-profile">
+            <div class="profile-card">
+                <h2 tabindex="0" class="username">{{ .Username }}</h2>
+                <div class="profile-options">
+                    <button onclick="window.location.href = '/settings'">Управление профилем</button>
+                    <button onclick="logout()">Выйти</button>
+                </div>
+            </div>
         </div>
     </div>
+
 
     <h3>Автомобили бренда {{.Brand}}</h3>
     <div class="car-list">
@@ -96,7 +144,6 @@
             </div>
         {{ end }}
     </div> 
-
 
     <script>
 

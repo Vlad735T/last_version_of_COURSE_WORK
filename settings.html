@@ -16,13 +16,11 @@
             justify-content: center;
             height: 100vh;
         }
-
         h1 {
             color: #0057b8;
             font-size: 24px;
             margin-bottom: 30px;
         }
-
         .container {
             background-color: #fff;
             border-radius: 8px;
@@ -31,13 +29,11 @@
             width: 100%;
             max-width: 400px;
         }
-
         .editable {
             color: #0057b8;
             text-decoration: underline;
             cursor: pointer;
         }
-
         input {
             display: none;
             width: 100%;
@@ -48,7 +44,6 @@
             margin-top: 5px;
             box-sizing: border-box;
         }
-
         button {
             margin-top: 10px;
             background-color: #0057b8;
@@ -60,9 +55,136 @@
             border-radius: 6px;
             cursor: pointer;
         }
+
+        /* Верхняя панель */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            box-sizing: border-box;
+        }
+        .site-name {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+        .profile-card {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            background-color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-left: 10px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .profile-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .username {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .username:hover {
+            color: #0077b5;
+        }
+        .profile-options {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            top: 100%;
+            right: 0;
+            min-width: 200px;
+            max-width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            border-radius: 6px;
+        }
+        .profile-card:hover .profile-options {
+            display: block;
+        }
+        .profile-options button {
+            width: 100%;
+            padding: 10px;
+            background-color: #0077b5;
+            color: white;
+            border: none;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .profile-options button:hover {
+            background-color: #005f8f;
+        }
+
+
+        /* Кнопка Главная */
+        .home-button {
+            background-color: #0077b5;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-left: 10px;
+        }
+        .home-button:hover {
+            background-color: #005f8f;
+        }
+
+        /* Кнопка "Разместить объявление" */
+        .add-car-btn {
+            background-color: #0077b5;
+            color: white;
+            font-size: 16px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 15px; 
+            transition: background-color 0.3s ease;
+        }
+        .add-car-btn:hover {
+            background-color: #0077b5;
+        }
+
     </style>
 </head>
 <body>
+
+    <div class="header">
+        <div class="site-name">АвтоНск</div>
+        <div class="user-profile">
+            <button class="home-button" onclick="window.location.href = '/allinf'">Главная</button>
+            <div class="profile-card">
+                <h2 tabindex="0" class="username">{{ .Username }}</h2>
+                <div class="profile-options">
+                    <button onclick="window.location.href = '/mycar'">Мои объявления</button>
+                    <button class="add-car-btn" onclick="window.location.href = '/addcar'">Разместить объявление</button>
+                    <button onclick="window.location.href = '/settings'">Управление профилем</button>
+                    <button onclick="logout()">Выйти</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <h1>Управление профилем</h1>
 
     <div class="container">
@@ -133,30 +255,34 @@
             const capitalizedName = letters_conversions(name);
             const capitalizedMiddleName = letters_conversions(middleName);
 
-            if ((!russianRegex.test(capitalizedSurname) && !englishRegex.test(capitalizedSurname)) ||
-                (!russianRegex.test(capitalizedName) && !englishRegex.test(capitalizedName)) ||
-                (!russianRegex.test(capitalizedMiddleName) && !englishRegex.test(capitalizedMiddleName))) {
-                alert('ФИО должно содержать буквы одного алфавита');
+            const isRussian = russianRegex.test(capitalizedSurname) && 
+                            russianRegex.test(capitalizedName) && 
+                            russianRegex.test(capitalizedMiddleName);
+
+            const isEnglish = englishRegex.test(capitalizedSurname) && 
+                            englishRegex.test(capitalizedName) && 
+                            englishRegex.test(capitalizedMiddleName);
+
+            if (!(isRussian || isEnglish)) {
+                alert('ФИО должно содержать буквы одного алфавита (либо все на русском, либо все на английском)');
                 return;
             }
+
 
             if (!email.includes('@')) {
                 alert('Email должен содержать символ @');
                 return;
             }
-
             const [localPart, emailDomain] = email.split('@');
             if (!/^[a-zA-Z0-9]+$/.test(localPart)) {
                 alert('Адрес почты должен содержать только английские буквы и цифры');
                 return;
             }
-
             if (!allowedEmailDomains.has(emailDomain)) {
                 alert(`Email должен быть с одного из доменов: ${Array.from(allowedEmailDomains).join(', ')}`);
                 return;
             }
 
-            // Проверка паролей
             if (newPassword || confirmPassword) { 
                 if (newPassword !== confirmPassword) {
                     alert("Пароли не совпадают!");
@@ -164,13 +290,11 @@
                 }
             }
 
-            // Формирование данных для отправки
             const formData = new FormData();
             formData.append("surname", capitalizedSurname);
             formData.append("name", capitalizedName);
             formData.append("middle_name", capitalizedMiddleName); 
             formData.append("email", email);
-
             if (newPassword) {
                 formData.append("password", newPassword);
             }

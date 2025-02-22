@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Авторизация</title>
     <style>
+        
         body {
             font-family: Arial, sans-serif;
             background-color: #f5f5f5;
@@ -14,7 +15,6 @@
             height: 100vh;
             margin: 0;
         }
-
         .auth-container {
             background: white;
             padding: 25px;
@@ -23,13 +23,11 @@
             width: 320px;
             text-align: center;
         }
-
         h1 {
             color: #333;
             font-size: 22px;
             margin-bottom: 20px;
         }
-
         label {
             display: block;
             font-size: 14px;
@@ -37,7 +35,6 @@
             text-align: left;
             margin-bottom: 6px;
         }
-
         input {
             width: 100%;
             padding: 10px;
@@ -48,12 +45,10 @@
             outline: none;
             transition: 0.3s;
         }
-
         input:focus {
             border-color: #0057b8;
             box-shadow: 0 0 5px rgba(0, 87, 184, 0.3);
         }
-
         button {
             background-color: #0057b8;
             color: white;
@@ -65,52 +60,22 @@
             cursor: pointer;
             transition: 0.3s;
         }
-
         button:hover {
             background-color: #004799;
         }
-
         p {
             font-size: 14px;
             margin-top: 15px;
         }
-
         a {
             color: #0057b8;
             text-decoration: none;
         }
-
         a:hover {
             text-decoration: underline;
         }
+
     </style>
-    <script>
-        async function submitForm(event) {
-            event.preventDefault();
-            const phone = document.getElementById('phone').value;
-            const password = document.getElementById('password').value;
-
-            const formData = new FormData();
-            formData.append("phone_number", phone);
-            formData.append("password", password);
-
-            try {
-                const response = await fetch("/login", {
-                    method: "POST",
-                    body: formData
-                });
-
-                if (response.ok) {
-                    window.location.href = "/allinf"; 
-                } else {
-                    const errorMessage = await response.text();
-                    alert(errorMessage); 
-                }
-            } catch (error) {
-                alert("Ошибка соединения с сервером");
-            }
-        }
-    </script>
 </head>
 <body>
     <div class="auth-container">
@@ -131,4 +96,32 @@
         <p><a href="/register">Нет ещё аккаунта? Зарегистрируйтесь</a></p>
     </div>
 </body>
+
+<script>
+    async function submitForm(event) {
+        event.preventDefault();
+        const phone = document.getElementById('phone').value;
+        const password = document.getElementById('password').value;
+
+        const formData = new FormData();
+        formData.append("phone_number", phone);
+        formData.append("password", password);
+
+        try {
+            const response = await fetch("/login", {
+                method: "POST",
+                body: formData
+            });
+
+            if (response.ok) {
+                window.location.href = "/allinf"; 
+            } else {
+                const errorMessage = await response.text();
+                alert(errorMessage); 
+            }
+        } catch (error) {
+            alert("Ошибка соединения с сервером");
+        }
+    }
+</script>
 </html>

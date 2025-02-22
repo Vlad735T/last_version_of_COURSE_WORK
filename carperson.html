@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мои автомобили</title>
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Верхняя панель */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            box-sizing: border-box;
+        }
+        .site-name {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+        .profile-card {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            background-color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-left: 10px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .profile-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .username {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .username:hover {
+            color: #0077b5;
+        }
+        .profile-options {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            top: 100%;
+            right: 0;
+            min-width: 200px;
+            max-width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            border-radius: 6px;
+        }
+        .profile-card:hover .profile-options {
+            display: block;
+        }
+        .profile-options button {
+            width: 100%;
+            padding: 10px;
+            background-color: #0077b5;
+            color: white;
+            border: none;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .profile-options button:hover {
+            background-color: #005f8f;
+        }
+
+
+        /* Кнопка Главная */
+        .home-button {
+            background-color: #0077b5;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-left: 10px;
+        }
+        .home-button:hover {
+            background-color: #005f8f;
+        }
+
+
+        /* Кнопки для автомобилей */
+        .car-card button {
+            background-color: #0077b5;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .car-card button:hover {
+            background-color: #005f8f;
+        }
+
+
+        /* Контейнер с объявлениями */
+        .cars-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .car-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .car-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .car-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .car-details {
+            font-size: 14px;
+            color: #666;
+        }
+        .car-price {
+            font-size: 20px;
+            font-weight: bold;
+            color: #0077b5;
+            margin-top: 10px;
+        }
+
+        /* Модальное окно для обработки данных по машине */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh; /* Ограничение по высоте */
+            overflow-y: auto; 
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+        .modal-content h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .modal-content form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; 
+            align-items: center; 
+        }
+        .modal-content .form-group {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .modal-content label {
+            width: 100%;
+            text-align: center; 
+            font-weight: bold;
+            color: #555;
+        }
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            text-align: center; 
+        }
+        .modal-content input:focus {
+            border-color: #0077b5;
+        }
+        .modal-content button {
+            background-color: #0077b5;
+            color: white;
+            font-size: 16px;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            transition: background-color 0.3s ease;
+        }
+        .modal-content button {
+            width: 100%;
+        }
+        .modal-content button:hover {
+            background-color: #005f8f;
+        }
+
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            cursor: pointer;
+            font-size: 22px;
+            color: #888;
+            transition: color 0.3s ease;
+        }
+        .close:hover {
+            color: #333;
+        }
+
+
+        /* Стиль для модального окна */
+        #carDetailsModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        #carDetailsModal .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            text-align: left;
+            position: relative;
+        }
+        #carDetailsModal .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        #car-modal-price {
+            color: red;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 500px) {
+            #carDetailsModal .modal-content {
+                width: 95%;
+            }
+        }
+
+        /* Кнопка "Разместить объявление" */
+        .add-car-btn {
+            background-color: #0077b5;
+            color: white;
+            font-size: 16px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 15px; 
+            transition: background-color 0.3s ease;
+        }
+        .add-car-btn:hover {
+            background-color: #0077b5;
+        }
+
+
+    </style>
+</head>
+<body>
+
+<main>
+
+    <div class="header">
+        <div class="site-name">АвтоНск</div>
+        <div class="user-profile">
+            <button class="home-button" onclick="window.location.href = '/allinf'">Главная</button>
+            <div class="profile-card">
+                <h2 tabindex="0" class="username">{{ .Username }}</h2>
+                <div class="profile-options">
+                    <button onclick="window.location.href = '/mycar'">Мои объявления</button>
+                    <button class="add-car-btn" onclick="window.location.href = '/addcar'">Разместить объявление</button>
+                    <button onclick="window.location.href = '/settings'">Управление профилем</button>
+                    <button onclick="logout()">Выйти</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cars-container">
+        <h3>Список доступных объявлений о машинах</h3>
+        {{ if .Cars }}
+            {{ range .Cars }}
+                <div class="car-card">
+                    <div class="car-title">{{ .Brand }} {{ .Model }} ({{ .Year }})</div>
+                    <div class="car-details">
+                        <p>Объем двигателя: {{ .EngineVolume }} л</p>
+                        <p>Мощность: {{ .Power }} л.с.</p>
+                        <p>Трансмиссия: {{ .Transmission }}</p>
+                        <p>Цвет: {{ .Color }}</p>
+                        <p class="car-price">{{ .Price }} ₽</p>
+                    </div>
+                    <button onclick="openCarDetailsModal(this)" 
+                            data-brand="{{ .Brand }}"
+                            data-model="{{ .Model }}"
+                            data-year="{{ .Year }}"
+                            data-price="{{ .Price }}"
+                            data-power="{{ .Power }}"
+                            data-engine="{{ .EngineVolume }}"
+                            data-transmission="{{ .Transmission }}"
+                            data-color="{{ .Color }}"
+                            data-seller-name="{{ .SellerName }}"
+                            data-seller-middle-name="{{ .SellerMiddleName }}"
+                            data-seller-phone="{{ .SellerPhone }}"
+                            data-seller-email="{{ .SellerEmail }}">
+                        Подробнее
+                    </button>
+                    <button class="edit-button" 
+                        onclick="openModal('{{ .ID }}', '{{ .Brand }}', '{{ .Model }}', '{{ .Year }}', '{{ .Price }}', 
+                        '{{ .EngineVolume }}', '{{ .Power }}', '{{ .Transmission }}', '{{ .Color }}')">Редактировать
+                        </button>
+                </div>
+            {{ end }}
+        {{ else }}
+            <p>У вас нет объявлений с автомобилями. <a href="/addcar">Добавить объявление</a>.</p>
+        {{ end }}
+    </div>
+
+</main>
+
+    <div id="carDetailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeCarDetailsModal()">❌</span>
+            <h3>Детали автомобиля</h3>
+
+            <h4>Марка и модель:</h4>
+            <p><span id="modal-brand"></span> <span id="modal-model"></span> ( <span id="modal-year"></span> )</p>
+
+            <h4>Характеристики:</h4>
+            <p>Мощность: <span id="modal-power"></span> л.с.</p>
+            <p>Объем двигателя: <span id="modal-engine"></span> л</p>
+            <p>Коробка передач: <span id="modal-transmission"></span></p>
+            <p>Цвет: <span id="modal-color"></span></p>
+
+            <h4>Цена:</h4>
+            <p id="car-modal-price"></p>
+
+            <h4>Продавец:</h4>
+            <p>Имя: <span id="modal-seller-name"></span></p>
+            <p>Телефон: <span id="modal-seller-phone"></span></p>
+            <p>Email: <span id="modal-seller-email"></span></p>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">❌</span>
+            <h3>Редактировать данные об автомобиле</h3>
+
+            <form id="editForm">
+                <input type="hidden" id="carID" name="carID">
+                
+                <label>Марка:</label>
+                <input type="text" id="brand" name="brand" maxlength="20" oninput="validateTextInput(this)">
+                
+                <label>Модель:</label>
+                <input type="text" id="model" name="model" maxlength="20" oninput="validateModelInput(this)">
+
+                <label>Год выпуска:</label>
+                <input type="text" id="year" name="year" maxlength="4" oninput="validateYear(this)">
+
+                <label>Цена:</label>
+                <input type="text" id="price" name="price" maxlength="9" oninput="validateNumber(this)">
+
+                <label>Объем двигателя (л):</label>
+                <input type="text" id="engineVolume" name="engineVolume" maxlength="4" oninput="validateEngineVolume(this)">
+
+                <label>Мощность (л.с.):</label>
+                <input type="text" id="power" name="power" maxlength="4" oninput="validateNumber(this)">
+
+                <label>Трансмиссия:</label>
+                <input type="text" id="transmission" name="transmission" maxlength="20" oninput="validateTextInput(this)">
+
+                <label>Цвет:</label>
+                <input type="text" id="color" name="color" maxlength="20" oninput="validateTextInput(this)">
+
+                <button type="button" onclick="updateCar()">Изменить данные</button>
+            </form>
+
+            <p id="changesMessage"></p>
+        </div>
+    </div>
+
+<script>
+
+    function openCarDetailsModal(button) {
+        document.getElementById("modal-brand").innerText = button.getAttribute("data-brand");
+        document.getElementById("modal-model").innerText = button.getAttribute("data-model");
+        document.getElementById("modal-year").innerText = button.getAttribute("data-year");
+        document.getElementById("modal-power").innerText = button.getAttribute("data-power");
+        document.getElementById("modal-engine").innerText = button.getAttribute("data-engine");
+        document.getElementById("modal-transmission").innerText = button.getAttribute("data-transmission");
+        document.getElementById("modal-color").innerText = button.getAttribute("data-color");
+
+        document.getElementById("car-modal-price").innerText = button.getAttribute("data-price") + " ₽";
+
+        document.getElementById("modal-seller-name").innerText = button.getAttribute("data-seller-name") + " " + button.getAttribute("data-seller-middle-name");
+        document.getElementById("modal-seller-phone").innerText = button.getAttribute("data-seller-phone");
+        document.getElementById("modal-seller-email").innerText = button.getAttribute("data-seller-email");
+
+        document.getElementById("carDetailsModal").style.display = "flex";
+    }
+    function closeCarDetailsModal() {
+        document.getElementById("carDetailsModal").style.display = "none";
+    }
+
+
+    function openModal(id, brand, model, year, price, engineVolume, power, transmission, color) {
+        document.getElementById("carID").value = id;
+        document.getElementById("brand").value = brand;
+        document.getElementById("model").value = model;
+        document.getElementById("year").value = year;
+        document.getElementById("price").value = price;
+        document.getElementById("engineVolume").value = engineVolume;
+        document.getElementById("power").value = power;
+        document.getElementById("transmission").value = transmission;
+        document.getElementById("color").value = color;
+
+        document.getElementById("editModal").style.display = "flex";
+
+        document.getElementById("editForm").dataset.original = JSON.stringify({
+            brand, model, year, price, engineVolume, power, transmission, color
+        });
+    }
+    function closeModal() {
+        document.getElementById("editModal").style.display = "none";
+    }
+
+    
+    async function updateCar() {
+        const form = document.getElementById("editForm");
+        const id = document.getElementById("carID").value;
+        const yearInput = document.getElementById("year").value.trim();
+
+        if (!/^\d{4}$/.test(yearInput)) {
+            alert("Год выпуска должен содержать ровно 4 цифры!");
+            return;
+        }
+
+
+        const updatedData = {
+            brand: document.getElementById("brand").value.trim(),
+            model: document.getElementById("model").value.trim(),
+            year: parseInt(yearInput, 10), 
+            price: parseInt(document.getElementById("price").value.trim()), 
+            engineVolume: parseFloat(document.getElementById("engineVolume").value.trim()), 
+            power: parseInt(document.getElementById("power").value.trim(), 10), 
+            transmission: document.getElementById("transmission").value.trim(),
+            color: document.getElementById("color").value.trim()
+        };
+        if (!validateFields(updatedData)) {
+            return;
+        }
+
+        const originalData = JSON.parse(form.dataset.original || "{}");
+        let changes = [];
+        for (const key in updatedData) {
+            if (updatedData[key] !== originalData[key]) {
+                changes.push(`${getFieldName(key)}: ${originalData[key]} → ${updatedData[key]}`);
+            }
+        }
+        if (changes.length === 0) {
+            alert("Нет изменений для сохранения!");
+            return;
+        }
+
+        const formData = new FormData(form);
+            for (const pair of formData.entries()) {
+            console.log(pair[0] + ', ' + pair[1]);
+        }
+
+        try {
+            const response = await fetch("/updatecarinfo", {
+                method: "POST",
+                body: formData
+            });
+
+            
+            if (response.ok) {
+                alert("Данные успешно обновлены!");
+                window.location.href = "/mycar";
+            } else {
+                const errorMessage = await response.text();
+                alert("Ошибка: " + errorMessage);
+            }
+        } catch (error) {
+            alert("Ошибка соединения с сервером");
+        }
+    }
+
+    function validateFields(data) {
+        const textFields = ["brand", "model", "transmission", "color"];
+        for (const field of textFields) {
+            if (data[field] === "") {
+                alert(`Поле "${getFieldName(field)}" не может быть пустым!`);
+                return false;
+            }
+        }
+
+        const numberFields = {
+            price: { min: 1, message: "Цена должна быть больше 0!" },
+            engineVolume: { min: 0.1, message: "Объем двигателя должен быть больше 0!" },
+            power: { min: 1, message: "Мощность должна быть больше 0!" }
+        };
+
+        for (const field in numberFields) {
+            if (parseFloat(data[field]) < numberFields[field].min) {
+                alert(numberFields[field].message);
+                return false;
+            }
+        }
+
+        return true; 
+    }
+    function getFieldName(field) {
+        const fieldNames = {
+            brand: "Марка",
+            model: "Модель",
+            year: "Год выпуска",
+            price: "Цена",
+            engineVolume: "Объем двигателя",
+            power: "Мощность",
+            transmission: "Трансмиссия",
+            color: "Цвет"
+        };
+        return fieldNames[field] || field;
+    }
+
+    function validateTextInput(input) {
+        input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё]/g, '');
+    }
+    function validateModelInput(input) {
+        input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё0-9]/g, '');
+    }
+
+    function validateNumber(input) {
+        input.value = input.value.replace(/\D/g, '');
+        
+        if (input.value.length > 1 && input.value[0] === '0') {
+            input.value = input.value.slice(1);
+        }
+    }
+    function validateEngineVolume(input) {
+        input.value = input.value.replace(/[^0-9.]/g, ''); // Удаляем все символы, кроме цифр и точки
+
+        if (input.value.startsWith(".")) {
+            input.value = "0" + input.value;
+        }
+
+        const dotCount = (input.value.match(/\./g) || []).length;
+        if (dotCount > 1) {
+            input.value = input.value.replace(/\.+$/, '');
+        }
+
+        if (input.value.startsWith("0") && input.value[1] !== "." && input.value.length > 1) {
+            input.value = input.value.slice(1); // Убираем ведущий ноль, если он не перед точкой
+        }
+
+        // Ограничение ввода до формата XX.X (не более 2 цифр перед точкой и 1 после)
+        let match = input.value.match(/^(\d{0,2})(\.\d{0,1})?$/);
+        if (!match) {
+            input.value = input.value.slice(0, -1);
+            return;
+        }
+
+        let num = parseFloat(input.value);
+        if (num > 99.9) {
+            input.value = "99.9";
+        }
+    }
+    function validateYear(input) {
+        input.value = input.value.replace(/\D/g, ''); // Убираем всё, кроме цифр
+
+        if (input.value.length > 1 && input.value[0] === '0') {
+            input.value = input.value.slice(1); // Запрещаем ввод 0 первым
+        }
+
+        if (input.value.length === 4) {
+            let year = parseInt(input.value);
+
+            if (year < 1970) {
+                input.value = "1970";
+            } else if (year > 2025) {
+                input.value = "2025";
+            }
+        }
+    }
+
+
+    function logout() {
+        window.location.href = '/logout';
+    }
+
+</script>
+
+</body>
+</html>
