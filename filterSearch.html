@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Результаты поиска</title>
+    <title>Поиск автомобилей</title>
     <style>
-        .car-list { margin-top: 20px; }
-        .car-item { border-bottom: 1px solid #ddd; padding: 10px; }
 
         body {
             font-family: Arial, sans-serif;
@@ -15,6 +13,7 @@
             padding: 0;
         }
 
+        
         /* Верхняя панель */
         .header {
             display: flex;
@@ -22,7 +21,7 @@
             align-items: center;
             background-color: #333;
             color: white;
-            padding: 10px 20px;
+            padding: 15px 30px; 
             box-sizing: border-box;
         }
         .site-name {
@@ -30,9 +29,13 @@
             font-weight: bold;
             text-transform: uppercase;
         }
+
+
+        /* Профиль пользователя */
         .user-profile {
             display: flex;
             align-items: center;
+            position: relative; 
         }
         .profile-card {
             position: relative;
@@ -77,6 +80,9 @@
         .profile-card:hover .profile-options {
             display: block;
         }
+
+
+        /* Кнопки в выпадающем меню */
         .profile-options button {
             width: 100%;
             padding: 10px;
@@ -87,6 +93,7 @@
             border-radius: 6px;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            margin-bottom: 5px;
         }
         .profile-options button:hover {
             background-color: #005f8f;
@@ -109,23 +116,18 @@
         }
 
 
-        /* Кнопка для перехода на /allinf */
-        .profile-button {
-            padding: 10px 20px;
-            background-color: #005f8f;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            text-align: center;
-            transition: background-color 0.3s ease;
-            text-decoration: none; 
-        }
-        .profile-button:hover {
-            background-color: #004b6a;
-        }
+        /* Список автомобилей */
+        .car-list { margin-top: 20px; }
+        .car-item { border-bottom: 1px solid #ddd; padding: 10px; }
 
 
+        /* Новый блок для текста о параметрах поиска */
+        .search-info {
+            margin: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -135,10 +137,10 @@
         <div class="user-profile">
             <button class="home-button" onclick="window.location.href = '/allinf'">Главная</button>
             <div class="profile-card">
-                <h2 tabindex="0" class="username">{{ .Username }}</h2>
+                <span tabindex="0" class="username">{{ .Username }}</span>
                 <div class="profile-options">
                     <button onclick="window.location.href = '/mycar'">Мои объявления</button>
-                    <button onclick="window.location.href = '/addcars'">Разместить объявление</button>
+                    <button class="add-car-btn" onclick="window.location.href = '/addcars'">Разместить объявление</button>
                     <button onclick="window.location.href = '/settings'">Управление профилем</button>
                     <button onclick="logout()">Выйти</button>
                 </div>
@@ -146,22 +148,28 @@
         </div>
     </div>
 
+    <div class="search-info">
+        Все объявления по заданным параметрам:
+    </div>
 
     <div class="car-list">
-        {{ range .Cars }}
+        {{ if .Cars }}
+            {{ range .Cars }}
             <div class="car-item">
-                <h4>{{.Brand}} {{.Model}} ({{.Year}})</h4>
-                <p><strong>Цена:</strong> {{.Price}} ₽</p>
-                <p><strong>Мощность:</strong> {{.Power}} л.с.</p>
-                <p><strong>Объём двигателя:</strong> {{.EngineVolume}} л</p>
-                <p><strong>Коробка передач:</strong> {{.Transmission}}</p>
-                <p><strong>Цвет:</strong> {{.Color}}</p>
-                <p><strong>Продавец:</strong> {{.SellerSurname}} {{.SellerName}}</p>
-                <p><strong>Телефон:</strong> {{.SellerPhone}}</p>
-                <p><strong>Email:</strong> {{.SellerEmail}}</p>
+                <h3>{{ .Brand }} {{ .Model }} ({{ .Year }})</h3>
+                <p>Двигатель: {{ .EngineVolume }}L, {{ .Power }} л.с.</p>
+                <p>Трансмиссия: {{ .Transmission }}</p>
+                <p>Цвет: {{ .Color }}</p>
+                <p>Цена: {{ .Price }} руб.</p>
+                <p>Продавец: {{ .SellerSurname }} {{ .SellerName }}</p>
+                <p>Телефон: {{ .SellerPhone }}</p>
+                <p>Email: {{ .SellerEmail }}</p>
             </div>
+            {{ end }}
+        {{ else }}
+            <p>Нет доступных автомобилей по выбранным параметрам.</p>
         {{ end }}
-    </div> 
+    </div>
 
     <script>
 
@@ -187,11 +195,11 @@
             }
         });
 
+
         function logout() {
             document.cookie = "jwt_token=; Max-Age=0; path=/";
             window.location.href = '/login';
         }
-
     </script>
 </body>
 </html>

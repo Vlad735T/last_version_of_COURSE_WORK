@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>АвтоНск - Поиск автомобилей в Новосибирске</title>
-
     <style>
 
-        /* Прямоугольник с автомобилями и т.д */
+         /* Прямоугольник с автомобилями и т.д */
         .car-counts {
             margin: 20px 0;
             padding: 20px;
@@ -19,6 +18,21 @@
             font-size: 20px;
             color: #444; 
             margin-bottom: 15px;
+        }
+        .brand-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .brand-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 200px; 
+        }
+        .brand-item {
+            display: flex;
+            justify-content: space-between;
         }
         .car-brand-name {
             color: black; 
@@ -34,7 +48,7 @@
         .car-count-link:hover .car-count {
             text-decoration: underline; 
         }
-    
+
 
         /* Форма с фильтрами  */
         .filter-section { 
@@ -132,7 +146,6 @@
             }
         }
 
-
         /* Список автомобилей */
         .car-list {
             margin-top: 20px;
@@ -158,12 +171,12 @@
             margin: 0;
             font-size: 1.3em;
             font-weight: bold;
-            color: #333; /* Темно-серый */
+            color: #333;
         }
         .car-info p {
             margin: 0;
             font-size: 1.1em;
-            color: #555; /* Более мягкий серый цвет */
+            color: #555;
         }
         .car-info button {
             position: absolute;
@@ -179,9 +192,8 @@
             transition: background-color 0.3s ease;
         }
         .car-info button:hover {
-            background-color: #005f8f; /* Тот же темный оттенок синего */
+            background-color: #005f8f; 
         }
-        /* Адаптивность */
         @media (max-width: 768px) {
             .modal-content {
                 width: 90%;
@@ -231,7 +243,7 @@
             justify-content: space-between; 
             align-items: center;
             background-color: #333; 
-            color: white; /* Цвет текста */
+            color: white; 
             padding: 10px 20px;
             box-sizing: border-box;
         }
@@ -254,7 +266,7 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            margin-right: 15px; /* Отступ от профиля */
+            margin-right: 15px; 
             transition: background-color 0.3s ease;
         }
         .add-car-btn:hover {
@@ -322,21 +334,15 @@
             background-color: #005f8f;
         }
 
-
-
-
-
     </style>
-
 </head>
 <body>
     <main>
 
         <div class="header">
             <div class="site-name">АвтоНск</div>
-
             <div class="user-profile">
-                <button class="add-car-btn" onclick="window.location.href = '/addcar'">Разместить объявление</button>
+                <button class="add-car-btn" onclick="window.location.href = '/addcars'">Разместить объявление</button>
                 <div class="profile-card">
                     <h2 tabindex="0" class="username">{{ .Username }}</h2>
                     <div class="profile-options">
@@ -350,19 +356,27 @@
 
         <div class="car-counts">
             <h3>Количество автомобилей по маркам</h3>
-            {{ range $brand, $count := .CarData }}
-                <p>
-                    <strong class="car-brand-name">{{ $brand }}</strong>
-                    <a href="javascript:void(0)" class="car-count-link" data-brand="{{ $brand }}">
-                        <span class="car-count">{{ $count }}</span>
-                    </a>
-                </p>
-            {{ end }}
+            <div class="brand-list">
+                {{ range .BrandColumns }}
+                    <div class="brand-column">
+                        {{ range . }}
+                            <div class="brand-item">
+                                <p>
+                                    <strong class="car-brand-name">{{ . }}</strong>
+                                    <a href="javascript:void(0)" class="car-count-link" data-brand="{{ . }}">
+                                        <span class="car-count">{{ index $.CarData . }}</span>
+                                    </a>
+                                </p>
+                            </div>
+                        {{ end }}
+                    </div>
+                {{ end }}
+            </div>
         </div>
 
         <div class="filter-section">
             <h3>Фильтрация по параметрам</h3>
-            <form id="filter-form" onsubmit="return validateFilters(event)">
+            <form id="filter-form">
 
                 <div class="filter-row">
                     <div class="filter-field">
@@ -407,8 +421,9 @@
 
                 <div class="filter-buttons">
                     <button type="button" class="reset-btn" onclick="resetFilters()">Сбросить</button>
-                    <button type="submit" class="search-btn">Показать</button>
+                    <button type="button" class="search-btn" onclick="validateFilters()">Показать</button>
                 </div>
+
             </form>
         </div>
 
@@ -429,7 +444,6 @@
             </div>
             {{ end }}
         </div>
-
 
     </main>
 
@@ -575,23 +589,23 @@
             const fromInput = document.getElementById(fromId);
             const toInput = document.getElementById(toId);
 
-            const fromValue = isInteger ? parseInt(fromInput.value, 10) : parseFloat(fromInput.value);
-            const toValue = isInteger ? parseInt(toInput.value, 10) : parseFloat(toInput.value);
+            const fromValue = fromInput.value ? (isInteger ? parseInt(fromInput.value, 10) : parseFloat(fromInput.value)) : null;
+            const toValue = toInput.value ? (isInteger ? parseInt(toInput.value, 10) : parseFloat(toInput.value)) : null;
 
             if (fromInput.value && !toInput.value) {
                 alert(`Пожалуйста, введите ${fieldName} "до"`);
-                toInput.classList.add('error');
+                toInput.classList.add("error");
                 return false;
             } else if (!fromInput.value && toInput.value) {
                 alert(`Пожалуйста, введите ${fieldName} "от"`);
-                fromInput.classList.add('error');
+                fromInput.classList.add("error");
                 return false;
             }
 
-            if (fromValue > toValue) {
+            if (fromValue !== null && toValue !== null && fromValue > toValue) {
                 alert(`${fieldName} "от" не может быть больше "до"`);
-                fromInput.classList.add('error');
-                toInput.classList.add('error');
+                fromInput.classList.add("error");
+                toInput.classList.add("error");
                 return false;
             }
 
@@ -629,15 +643,46 @@
         }
 
 
+        function validateFilters() {
+            let isValid = true;
+            const params = new URLSearchParams();
+
+            const fields = ["price-from", "price-to", "power-from", "power-to", "year-from", "year-to", "engine-volume-from", "engine-volume-to"];
+
+            fields.forEach(id => {
+                const input = document.getElementById(id);
+                let value = input.value.trim();
+
+                if (value !== "" && isNaN(parseFloat(value))) {
+                    input.classList.add("error");
+                    isValid = false;
+                } else {
+                    input.classList.remove("error");
+                    if (value) params.append(id, parseFloat(value));
+                }
+            });
+
+            if (!validatePair("price-from", "price-to", "Цену") || 
+                !validatePair("power-from", "power-to", "Мощность", true) || 
+                !validatePair("year-from", "year-to", "Год", true) || 
+                !validatePair("engine-volume-from", "engine-volume-to", "Объем двигателя")) {
+                isValid = false;
+            }
+
+            if (!isValid) {
+                return;
+            }
+
+            window.location.href = `/filter?${params.toString()}`;
+        }
+
+
         function resetFilters() {
             const fieldsToReset = ["price-from", "price-to", "power-from", "power-to"];
             fieldsToReset.forEach(id => document.getElementById(id).value = "");
 
             document.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
         }
-
-
-
         function logout() {
             document.cookie = "jwt_token=; Max-Age=0; path=/";
             window.location.href = '/login';

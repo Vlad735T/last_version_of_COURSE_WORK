@@ -12,6 +12,100 @@
             background-color: #f4f4f4;
             text-align: center;
         }
+        /* Верхняя панель */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            box-sizing: border-box;
+        }
+        .site-name {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+        .profile-card {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            background-color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-left: 10px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .profile-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .username {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .username:hover {
+            color: #0077b5;
+        }
+        .profile-options {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            top: 100%;
+            right: 0;
+            min-width: 200px;
+            max-width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            border-radius: 6px;
+        }
+        .profile-card:hover .profile-options {
+            display: block;
+        }
+        .profile-options button {
+            width: 100%;
+            padding: 10px;
+            background-color: #0077b5;
+            color: white;
+            border: none;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .profile-options button:hover {
+            background-color: #005f8f;
+        }
+
+
+        /* Кнопка Главная */
+        .home-button {
+            background-color: #0077b5;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-left: 10px;
+        }
+        .home-button:hover {
+            background-color: #005f8f;
+        }
+
+
         form {
             background: white;
             padding: 20px;
@@ -53,6 +147,24 @@
     </style>
 </head>
 <body>
+
+    <div class="header">
+        <div class="site-name">АвтоНск</div>
+        <div class="user-profile">
+            <button class="home-button" onclick="window.location.href = '/allinf'">Главная</button>
+            <div class="profile-card">
+                <h2 tabindex="0" class="username">{{ .Username }}</h2>
+                <div class="profile-options">
+                    <button onclick="window.location.href = '/mycar'">Мои объявления</button>
+                    <button onclick="window.location.href = '/addcars'">Разместить объявление</button>
+                    <button onclick="window.location.href = '/settings'">Управление профилем</button>
+                    <button onclick="logout()">Выйти</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <h2>Добавление автомобиля</h2>
     <form id="addCarForm">
         <label>Марка:</label>
@@ -85,6 +197,28 @@
     
     <script>
 
+        const profileCard = document.querySelector('.profile-card');
+        const profileOptions = document.querySelector('.profile-options');
+        const username = document.querySelector('h2');
+        username.addEventListener('mouseenter', () => {
+            profileOptions.style.display = 'block'; // Показываем список
+        });
+        profileOptions.addEventListener('mouseenter', () => {
+            profileOptions.style.display = 'block';
+        });
+        profileCard.addEventListener('mouseleave', () => {
+            setTimeout(() => {
+                if (!profileCard.matches(':hover')) {
+                    profileOptions.style.display = 'none'; 
+                }
+            }, 50); // Задержка 50 мс
+        });
+        document.addEventListener('click', (event) => {
+            if (!profileCard.contains(event.target)) {
+                profileOptions.style.display = 'none';
+            }
+        });
+
         async function addCar() {
             const form = document.getElementById('addCarForm');
 
@@ -103,7 +237,7 @@
             }
 
             try {
-                const response = await fetch("/addcar", {
+                const response = await fetch("/addcars", {
                     method: "POST",
                     body: formData
                 });

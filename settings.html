@@ -177,7 +177,7 @@
                 <h2 tabindex="0" class="username">{{ .Username }}</h2>
                 <div class="profile-options">
                     <button onclick="window.location.href = '/mycar'">Мои объявления</button>
-                    <button class="add-car-btn" onclick="window.location.href = '/addcar'">Разместить объявление</button>
+                    <button class="add-car-btn" onclick="window.location.href = '/addcars'">Разместить объявление</button>
                     <button onclick="window.location.href = '/settings'">Управление профилем</button>
                     <button onclick="logout()">Выйти</button>
                 </div>
@@ -210,6 +210,30 @@
     </div>
 
     <script>
+
+        const profileCard = document.querySelector('.profile-card');
+        const profileOptions = document.querySelector('.profile-options');
+        const username = document.querySelector('h2');
+        username.addEventListener('mouseenter', () => {
+            profileOptions.style.display = 'block'; // Показываем список
+        });
+        profileOptions.addEventListener('mouseenter', () => {
+            profileOptions.style.display = 'block';
+        });
+        profileCard.addEventListener('mouseleave', () => {
+            setTimeout(() => {
+                if (!profileCard.matches(':hover')) {
+                    profileOptions.style.display = 'none'; 
+                }
+            }, 50); // Задержка 50 мс
+        });
+        document.addEventListener('click', (event) => {
+            if (!profileCard.contains(event.target)) {
+                profileOptions.style.display = 'none';
+            }
+        });
+
+
         function letters_conversions(str) { 
             return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
         }
