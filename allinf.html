@@ -235,6 +235,9 @@
         .close-btn:hover {
             color: #444; 
         }
+        body.modal-open {
+            overflow: hidden;
+        }
 
 
         /* Верхняя панель */
@@ -452,7 +455,7 @@
             <span class="close-btn" onclick="closeModal()">❌</span>
             <h3 id="modal-title"></h3>
             <p><strong>Цена:</strong> <span id="modal-price"></span> Руб</p>
-            <h4>Описание</h4>
+            <h4>Описание:</h4>
             <p><strong>Год выпуска:</strong> <span id="modal-year"></span></p>
             <p><strong>Мощность двигателя:</strong> <span id="modal-power"></span> л.с.</p>
             <p><strong>Объём двигателя:</strong> <span id="modal-engine"></span> л</p>
@@ -475,14 +478,20 @@
             document.getElementById("modal-engine").textContent = engineVolume;
             document.getElementById("modal-transmission").textContent = transmission;
             document.getElementById("modal-color").textContent = color;
+
             document.getElementById("modal-seller").textContent = `${sellerName} ${sellerMiddleName}`;
             document.getElementById("modal-phone").textContent = phone;
             document.getElementById("modal-email").textContent = email;
 
-            document.getElementById("carModal").style.display = "flex"; // Показать модальное окно
+            openModal();
+        }
+        function openModal() {
+            document.getElementById("carModal").style.display = "flex";
+            document.body.classList.add("modal-open");
         }
         function closeModal() {
-            document.getElementById("carModal").style.display = "none"; 
+            document.getElementById("carModal").style.display = "none";
+                document.body.classList.remove("modal-open");
         }
 
 
@@ -525,7 +534,6 @@
             input.value = input.value || slider.value;
             slider.value = input.value;
         }
-
         function toggleSlider(sliderId, inputId) {
             const slider = document.getElementById(sliderId);
             const input = document.getElementById(inputId);
@@ -537,14 +545,16 @@
 
             if (isHidden) {
                 slider.style.display = 'block';
-                
+
+                updateSliderValue(sliderId, inputId);
+
                 const rect = input.getBoundingClientRect();
                 slider.style.position = 'absolute';
                 slider.style.left = `${rect.left}px`;
                 slider.style.top = `${rect.bottom + window.scrollY + 5}px`;
 
-                // Синхронизируем ширину ползунка с шириной поля ввода
-                slider.style.width = `${rect.width}px`;     
+                // ширинa ползунка под поле ввода
+                slider.style.width = `${rect.width}px`;
 
                 document.activeSlider = slider;
             } else {
@@ -642,7 +652,12 @@
             });
         }
 
+        function resetFilters() {
+            const fieldsToReset = ["price-from", "price-to", "power-from", "power-to"];
+            fieldsToReset.forEach(id => document.getElementById(id).value = "");
 
+            document.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
+        }
         function validateFilters() {
             let isValid = true;
             const params = new URLSearchParams();
@@ -676,18 +691,21 @@
             window.location.href = `/filter?${params.toString()}`;
         }
 
-
-        function resetFilters() {
-            const fieldsToReset = ["price-from", "price-to", "power-from", "power-to"];
-            fieldsToReset.forEach(id => document.getElementById(id).value = "");
-
-            document.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
-        }
+        
         function logout() {
-            document.cookie = "jwt_token=; Max-Age=0; path=/";
-            window.location.href = '/login';
-        }
+            fetch('/logout', {
+                method: 'POST',
+                credentials: 'include' 
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message); 
 
+                localStorage.removeItem("jwt");
+                window.location.href = "/";
+            })
+            .catch(error => console.error("Ошибка выхода:", error));
+        }
     </script>
 </body>
 </html>

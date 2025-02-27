@@ -211,6 +211,21 @@
 
     <script>
 
+        function logout() {
+            fetch('/logout', {
+                method: 'POST',
+                credentials: 'include' 
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message); 
+
+                localStorage.removeItem("jwt");
+                window.location.href = "/";
+            })
+            .catch(error => console.error("Ошибка выхода:", error));
+        }
+        
         const profileCard = document.querySelector('.profile-card');
         const profileOptions = document.querySelector('.profile-options');
         const username = document.querySelector('h2');

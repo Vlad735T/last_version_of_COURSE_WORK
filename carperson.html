@@ -664,7 +664,18 @@
 
 
     function logout() {
-        window.location.href = '/logout';
+        fetch('/logout', {
+            method: 'POST',
+            credentials: 'include' 
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message); 
+
+            localStorage.removeItem("jwt");
+            window.location.href = "/";
+        })
+        .catch(error => console.error("Ошибка выхода:", error));
     }
 
 </script>

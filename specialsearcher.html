@@ -107,12 +107,10 @@
         .home-button:hover {
             background-color: #005f8f;
         }
-
-
-        /* Кнопка для перехода на /allinf */
+        /* Кнопка Войти */
         .profile-button {
             padding: 10px 20px;
-            background-color: #005f8f;
+            background-color: #0077b5;
             color: white;
             border: none;
             border-radius: 6px;
@@ -120,11 +118,38 @@
             text-align: center;
             transition: background-color 0.3s ease;
             text-decoration: none; 
+            margin-left: 15px;
         }
         .profile-button:hover {
-            background-color: #004b6a;
+            background-color: #005f8f;
         }
 
+
+        /* Для надписи авторизация */
+        .auth-notice {
+            background-color: #0077b5;
+            color: #fff;
+            padding: 15px;
+            border: 2px solid #005f8f;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: left;
+            width: fit-content;
+            max-width: 800px;
+            margin: 10px auto 0 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .auth-notice:hover {
+            background-color: #145de6;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .auth-notice p {
+            margin: 0;
+            text-decoration: underline;
+        }
 
     </style>
 </head>
@@ -134,18 +159,30 @@
         <div class="site-name">АвтоНск</div>
         <div class="user-profile">
             <button class="home-button" onclick="window.location.href = '/allinf'">Главная</button>
-            <div class="profile-card">
-                <h2 tabindex="0" class="username">{{ .Username }}</h2>
-                <div class="profile-options">
-                    <button onclick="window.location.href = '/mycar'">Мои объявления</button>
-                    <button onclick="window.location.href = '/addcars'">Разместить объявление</button>
-                    <button onclick="window.location.href = '/settings'">Управление профилем</button>
-                    <button onclick="logout()">Выйти</button>
-                </div>
-            </div>
+
+                {{ if .Username }}
+                    <div class="profile-card">
+                        <h2 tabindex="0" class="username">{{ .Username }}</h2>
+                        <div class="profile-options">
+                            <button onclick="window.location.href = '/mycar'">Мои объявления</button>
+                            <button onclick="window.location.href = '/addcars'">Разместить объявление</button>
+                            <button onclick="window.location.href = '/settings'">Управление профилем</button>
+                            <button onclick="logout()">Выйти</button>
+                        </div>
+                    </div>
+                {{ else }}
+                    <button class="profile-button" onclick="window.location.href = '/login'">Войти</button>
+                {{ end }}
         </div>
     </div>
 
+    {{ if not $.Auth }}
+        <div class="auth-notice">
+            <p onclick="window.location.href='/login'">
+                <em>Авторизуйтесь, чтобы увидеть контакты продавца.</em>
+            </p>
+        </div>
+    {{ end }}
 
     <div class="car-list">
         {{ range .Cars }}
@@ -156,12 +193,15 @@
                 <p><strong>Объём двигателя:</strong> {{.EngineVolume}} л</p>
                 <p><strong>Коробка передач:</strong> {{.Transmission}}</p>
                 <p><strong>Цвет:</strong> {{.Color}}</p>
-                <p><strong>Продавец:</strong> {{.SellerSurname}} {{.SellerName}}</p>
-                <p><strong>Телефон:</strong> {{.SellerPhone}}</p>
-                <p><strong>Email:</strong> {{.SellerEmail}}</p>
+
+                {{ if $.Auth }}
+                    <p><strong>Продавец:</strong> {{.SellerSurname}} {{.SellerName}}</p>
+                    <p><strong>Телефон:</strong> {{.SellerPhone}}</p>
+                    <p><strong>Email:</strong> {{.SellerEmail}}</p>
+                {{ end }}
             </div>
         {{ end }}
-    </div> 
+    </div>
 
     <script>
 
@@ -188,8 +228,18 @@
         });
 
         function logout() {
-            document.cookie = "jwt_token=; Max-Age=0; path=/";
-            window.location.href = '/login';
+            fetch('/logout', {
+                method: 'POST',
+                credentials: 'include' 
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message); 
+
+                localStorage.removeItem("jwt");
+                window.location.href = "/";
+            })
+            .catch(error => console.error("Ошибка выхода:", error));
         }
 
     </script>

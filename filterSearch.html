@@ -114,6 +114,22 @@
         .home-button:hover {
             background-color: #005f8f;
         }
+        /* Кнопка Войти */
+        .profile-button {
+            padding: 10px 20px;
+            background-color: #0077b5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.3s ease;
+            text-decoration: none; 
+            margin-left: 15px;
+        }
+        .profile-button:hover {
+            background-color: #005f8f;
+        }
 
 
         /* Список автомобилей */
@@ -128,6 +144,34 @@
             font-weight: bold;
             color: #333;
         }
+
+
+        /* Для надписи авторизация */
+        .auth-notice {
+            background-color: #0077b5;
+            color: #fff;
+            padding: 15px;
+            border: 2px solid #005f8f;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: left;
+            width: fit-content;
+            max-width: 800px;
+            margin: 10px auto 0 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .auth-notice:hover {
+            background-color: #145de6;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .auth-notice p {
+            margin: 0;
+            text-decoration: underline;
+        }
+
     </style>
 </head>
 <body>
@@ -136,34 +180,49 @@
         <div class="site-name">АвтоНск</div>
         <div class="user-profile">
             <button class="home-button" onclick="window.location.href = '/allinf'">Главная</button>
-            <div class="profile-card">
-                <span tabindex="0" class="username">{{ .Username }}</span>
-                <div class="profile-options">
-                    <button onclick="window.location.href = '/mycar'">Мои объявления</button>
-                    <button class="add-car-btn" onclick="window.location.href = '/addcars'">Разместить объявление</button>
-                    <button onclick="window.location.href = '/settings'">Управление профилем</button>
-                    <button onclick="logout()">Выйти</button>
-                </div>
-            </div>
+
+                {{ if .Username }}
+                    <div class="profile-card">
+                        <h2 tabindex="0" class="username">{{ .Username }}</h2>
+                        <div class="profile-options">
+                            <button onclick="window.location.href = '/mycar'">Мои объявления</button>
+                            <button onclick="window.location.href = '/addcars'">Разместить объявление</button>
+                            <button onclick="window.location.href = '/settings'">Управление профилем</button>
+                            <button onclick="logout()">Выйти</button>
+                        </div>
+                    </div>
+                {{ else }}
+                    <button class="profile-button" onclick="window.location.href = '/login'">Войти</button>
+                {{ end }}
         </div>
     </div>
 
-    <div class="search-info">
-        Все объявления по заданным параметрам:
-    </div>
-
     <div class="car-list">
+        {{ if not .IsAuthenticated }}
+            <div class="auth-notice" onclick="window.location.href='/login'">
+                <p><em>Авторизуйтесь, чтобы увидеть контакты продавца.</em></p>
+            </div>
+        {{ end }}
+
+        <div class="search-info">
+            Все объявления по заданным параметрам:
+        </div>
+        
         {{ if .Cars }}
             {{ range .Cars }}
             <div class="car-item">
                 <h3>{{ .Brand }} {{ .Model }} ({{ .Year }})</h3>
                 <p>Двигатель: {{ .EngineVolume }}L, {{ .Power }} л.с.</p>
-                <p>Трансмиссия: {{ .Transmission }}</p>
+                <p>Коробка передач: {{ .Transmission }}</p>
                 <p>Цвет: {{ .Color }}</p>
                 <p>Цена: {{ .Price }} руб.</p>
-                <p>Продавец: {{ .SellerSurname }} {{ .SellerName }}</p>
-                <p>Телефон: {{ .SellerPhone }}</p>
-                <p>Email: {{ .SellerEmail }}</p>
+
+                {{ if $.IsAuthenticated }}
+                    <p>Продавец: {{ .SellerName }} {{ .SellerMiddleName }}</p>
+                    <p>Телефон: {{ .SellerPhone }}</p>
+                    <p>Email: {{ .SellerEmail }}</p>
+                {{ end }}
+
             </div>
             {{ end }}
         {{ else }}
@@ -197,9 +256,20 @@
 
 
         function logout() {
-            document.cookie = "jwt_token=; Max-Age=0; path=/";
-            window.location.href = '/login';
+            fetch('/logout', {
+                method: 'POST',
+                credentials: 'include' 
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message); 
+
+                localStorage.removeItem("jwt");
+                window.location.href = "/";
+            })
+            .catch(error => console.error("Ошибка выхода:", error));
         }
+
     </script>
 </body>
 </html>
