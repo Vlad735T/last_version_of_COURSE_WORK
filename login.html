@@ -15,62 +15,77 @@
             height: 100vh;
             margin: 0;
         }
+
         .auth-container {
             background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            width: 320px;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            width: 380px;
             text-align: center;
+            box-sizing: border-box;
         }
+
         h1 {
             color: #333;
-            font-size: 22px;
-            margin-bottom: 20px;
+            font-size: 26px;
+            margin-bottom: 25px;
         }
+
         label {
             display: block;
-            font-size: 14px;
-            color: #666;
+            font-size: 16px;
+            color: #555;
             text-align: left;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            font-weight: bold;
         }
+
         input {
             width: 100%;
-            padding: 10px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            margin-bottom: 15px;
+            padding: 14px;
+            font-size: 16px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 20px;
             outline: none;
             transition: 0.3s;
+            box-sizing: border-box;
         }
+
         input:focus {
             border-color: #0057b8;
-            box-shadow: 0 0 5px rgba(0, 87, 184, 0.3);
+            box-shadow: 0 0 8px rgba(0, 87, 184, 0.4);
         }
+
         button {
             background-color: #0057b8;
             color: white;
-            font-size: 16px;
-            padding: 12px;
+            font-size: 18px;
+            padding: 14px;
             width: 100%;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             transition: 0.3s;
+            font-weight: bold;
         }
+
         button:hover {
             background-color: #004799;
         }
+
         p {
-            font-size: 14px;
-            margin-top: 15px;
+            font-size: 16px;
+            margin-top: 20px;
         }
+
         a {
             color: #0057b8;
             text-decoration: none;
+            font-weight: bold;
         }
+
         a:hover {
             text-decoration: underline;
         }
@@ -78,27 +93,37 @@
     </style>
 </head>
 <body>
+
+
     <div class="auth-container">
         <h1>Авторизация</h1>
-        <form onsubmit="submitForm(event)">
-            <label for="phone">Номер телефона:</label>
-            <input type="text" id="phone" name="phone_number" 
-                required maxlength="11" pattern="8[0-9]{10}" 
-                title="Номер телефона должен начинаться с 8 и содержать 11 цифр">
+        
+        <label for="phone">Номер телефона:</label>
+        <input type="text" id="phone" name="phone_number" required maxlength="11"
+            oninput="validateNumberInput(this)" 
+            title="Номер телефона должен начинаться с 8 и содержать 11 цифр">
 
-            <label for="password">Пароль:</label>
-            <input type="password" id="password" name="password" 
-                required minlength="5" maxlength="25" 
-                title="Пароль должен содержать от 5 до 25 символов">
 
-            <button type="submit">Войти</button>
-        </form>
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" name="password" 
+            required minlength="5" maxlength="25" 
+            title="Пароль должен содержать от 5 до 25 символов">
+
+        <button type="button" onclick="Login()">Войти</button>
         <p><a href="/register">Нет ещё аккаунта? Зарегистрируйтесь</a></p>
     </div>
+
+
 </body>
 
 <script>
-    async function submitForm(event) {
+
+    function validateNumberInput(input) {
+        input.value = input.value.replace(/[^0-9]/g, '');  
+        input.value = input.value.replace(/^0+/, '');  
+    }
+
+    async function Login() {
         event.preventDefault();
         const phone = document.getElementById('phone').value;
         const password = document.getElementById('password').value;
@@ -123,5 +148,6 @@
             alert("Ошибка соединения с сервером");
         }
     }
+
 </script>
 </html>

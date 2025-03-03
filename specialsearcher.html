@@ -145,11 +145,62 @@
         .auth-notice:hover {
             background-color: #145de6;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }   
+
+
+
+
+
+        .car-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between; /* Разбросать по ширине */
+            margin-bottom: 20px;
+        }
+
+        .car-item {
+            width: 23%;
+            box-sizing: border-box;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+            text-align: center;
+            transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease;
+        }
+
+        .car-item:hover {
+            transform: scale(1.05); /* Увеличение на 5% */
+            background: rgba(0, 102, 255, 0.1); /* Синий фон с прозрачностью */
+            border-color: #0066ff; /* Синий контур */
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        #prevPage, #nextPage {
+            background: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+        #prevPage:hover, #nextPage:hover {
+            background: #0056b3; 
         }
         .auth-notice p {
             margin: 0;
             text-decoration: underline;
         }
+
+
+
 
     </style>
 </head>
@@ -185,25 +236,61 @@
     {{ end }}
 
     <div class="car-list">
-        {{ range .Cars }}
-            <div class="car-item">
-                <h4>{{.Brand}} {{.Model}} ({{.Year}})</h4>
-                <p><strong>Цена:</strong> {{.Price}} ₽</p>
-                <p><strong>Мощность:</strong> {{.Power}} л.с.</p>
-                <p><strong>Объём двигателя:</strong> {{.EngineVolume}} л</p>
-                <p><strong>Коробка передач:</strong> {{.Transmission}}</p>
-                <p><strong>Цвет:</strong> {{.Color}}</p>
+        {{ range .CarRows }} 
+            <div class="car-row">
+                {{ range . }} 
+                    <div class="car-item">
+                        <h4>{{.Brand}} {{.Model}} ({{.Year}})</h4>
+                        <p><strong>Цена:</strong> {{.Price}} ₽</p>
+                        <p><strong>Мощность:</strong> {{.Power}} л.с.</p>
+                        <p><strong>Объём двигателя:</strong> {{.EngineVolume}} л</p>
+                        <p><strong>Коробка передач:</strong> {{.Transmission}}</p>
+                        <p><strong>Цвет:</strong> {{.Color}}</p>
 
-                {{ if $.Auth }}
-                    <p><strong>Продавец:</strong> {{.SellerSurname}} {{.SellerName}}</p>
-                    <p><strong>Телефон:</strong> {{.SellerPhone}}</p>
-                    <p><strong>Email:</strong> {{.SellerEmail}}</p>
+                        {{ if $.Auth }}
+                            <p><strong>Продавец:</strong> {{.SellerSurname}} {{.SellerName}}</p>
+                            <p><strong>Телефон:</strong> {{.SellerPhone}}</p>
+                            <p><strong>Email:</strong> {{.SellerEmail}}</p>
+                        {{ end }}
+                    </div>
                 {{ end }}
             </div>
         {{ end }}
+
+        <div class="pagination">
+            <button id="prevPage">Предыдущая</button>
+            <span id="currentPage">{{ .CurrentPage }}</span>
+            <button id="nextPage">Следующая</button>
+            <span id="totalPages" style="display: none;">{{ .TotalPages }}</span> 
+        </div>
     </div>
 
+
     <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+            let currentPage = parseInt(new URLSearchParams(window.location.search).get("page")) || 1;
+            const totalPages = parseInt(document.getElementById("totalPages").textContent) || 1;
+            document.getElementById("currentPage").textContent = currentPage;
+
+            document.getElementById("prevPage").addEventListener("click", function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    updatePage();
+                }
+            });
+            document.getElementById("nextPage").addEventListener("click", function () {
+                if (currentPage < totalPages) { 
+                    currentPage++;
+                    updatePage();
+                }
+            });
+            function updatePage() {
+                const url = new URL(window.location.href);
+                url.searchParams.set("page", currentPage);
+                window.location.href = url.toString();
+            }
+        });
 
         const profileCard = document.querySelector('.profile-card');
         const profileOptions = document.querySelector('.profile-options');

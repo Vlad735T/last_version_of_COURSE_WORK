@@ -29,8 +29,6 @@
             font-weight: bold;
             text-transform: uppercase;
         }
-
-
         /* Профиль пользователя */
         .user-profile {
             display: flex;
@@ -80,8 +78,6 @@
         .profile-card:hover .profile-options {
             display: block;
         }
-
-
         /* Кнопки в выпадающем меню */
         .profile-options button {
             width: 100%;
@@ -98,8 +94,6 @@
         .profile-options button:hover {
             background-color: #005f8f;
         }
-
-
         /* Кнопка Главная */
         .home-button {
             background-color: #0077b5;
@@ -132,20 +126,60 @@
         }
 
 
-        /* Список автомобилей */
-        .car-list { margin-top: 20px; }
-        .car-item { border-bottom: 1px solid #ddd; padding: 10px; }
+        .car-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between; /* Разбросать по ширине */
+            margin-bottom: 20px;
+        }
+
+        .car-item {
+            width: 23%;
+            box-sizing: border-box;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+            text-align: center;
+            transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease;
+        }
+
+        .car-item:hover {
+            transform: scale(1.05); /* Увеличение на 5% */
+            background: rgba(0, 102, 255, 0.1); /* Синий фон с прозрачностью */
+            border-color: #0066ff; /* Синий контур */
+        }
 
 
-        /* Новый блок для текста о параметрах поиска */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        #prevPage, #nextPage {
+            background: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+        #prevPage:hover, #nextPage:hover {
+            background: #0056b3; 
+        }
+
+
+        /* Текст специальный */
         .search-info {
             margin: 20px;
             font-size: 18px;
             font-weight: bold;
             color: #333;
         }
-
-
         /* Для надписи авторизация */
         .auth-notice {
             background-color: #0077b5;
@@ -172,6 +206,7 @@
             text-decoration: underline;
         }
 
+
     </style>
 </head>
 <body>
@@ -197,6 +232,7 @@
         </div>
     </div>
 
+
     <div class="car-list">
         {{ if not .IsAuthenticated }}
             <div class="auth-notice" onclick="window.location.href='/login'">
@@ -207,30 +243,68 @@
         <div class="search-info">
             Все объявления по заданным параметрам:
         </div>
-        
-        {{ if .Cars }}
-            {{ range .Cars }}
-            <div class="car-item">
-                <h3>{{ .Brand }} {{ .Model }} ({{ .Year }})</h3>
-                <p>Двигатель: {{ .EngineVolume }}L, {{ .Power }} л.с.</p>
-                <p>Коробка передач: {{ .Transmission }}</p>
-                <p>Цвет: {{ .Color }}</p>
-                <p>Цена: {{ .Price }} руб.</p>
 
-                {{ if $.IsAuthenticated }}
-                    <p>Продавец: {{ .SellerName }} {{ .SellerMiddleName }}</p>
-                    <p>Телефон: {{ .SellerPhone }}</p>
-                    <p>Email: {{ .SellerEmail }}</p>
-                {{ end }}
+        {{ if .CarRows }}
+            {{ range .CarRows }}
+                <div class="car-row">
+                    {{ range . }}
+                        <div class="car-item">
+                            <h3>{{ .Brand }} {{ .Model }} ({{ .Year }})</h3>
+                            <p>🛠 Двигатель: {{ .EngineVolume }}L, {{ .Power }} л.с.</p>
+                            <p>⚙️ Коробка передач: {{ .Transmission }}</p>
+                            <p>🎨 Цвет: {{ .Color }}</p>
+                            <p>💰 Цена: {{ .Price }} руб.</p>
 
-            </div>
+                            {{ if $.IsAuthenticated }}
+                                <p>👤 Продавец: {{ .SellerName }} {{ .SellerMiddleName }}</p>
+                                <p>📞 Телефон: {{ .SellerPhone }}</p>
+                                <p>✉️ Email: {{ .SellerEmail }}</p>
+                            {{ end }}
+                        </div>
+                    {{ end }}
+                </div>
             {{ end }}
         {{ else }}
-            <p>Нет доступных автомобилей по выбранным параметрам.</p>
+            <div class="no-results">
+                <p class="no-results-text">😕 Упс... По заданным параметрам ничего не найдено.</p>
+            </div>
         {{ end }}
+
+            <div class="pagination">
+                <button id="prevPage">Предыдущая</button>
+                <span id="currentPage">1</span>
+                <button id="nextPage">Следующая</button>
+                <span id="totalPages" style="display: none;">{{ .TotalPages }}</span> 
+            </div>
     </div>
 
     <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+            let currentPage = parseInt(new URLSearchParams(window.location.search).get("page")) || 1;
+            const totalPages = parseInt(document.getElementById("totalPages").textContent) || 1;
+            document.getElementById("currentPage").textContent = currentPage;
+
+            document.getElementById("prevPage").addEventListener("click", function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    updatePage();
+                }
+            });
+            document.getElementById("nextPage").addEventListener("click", function () {
+                if (currentPage < totalPages) { 
+                    currentPage++;
+                    updatePage();
+                }
+            });
+            function updatePage() {
+                const url = new URL(window.location.href);
+                url.searchParams.set("page", currentPage);
+                window.location.href = url.toString();
+            }
+        });
+
+
 
         const profileCard = document.querySelector('.profile-card');
         const profileOptions = document.querySelector('.profile-options');
@@ -253,7 +327,6 @@
                 profileOptions.style.display = 'none';
             }
         });
-
 
         function logout() {
             fetch('/logout', {

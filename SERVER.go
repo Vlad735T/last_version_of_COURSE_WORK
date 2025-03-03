@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -148,7 +150,7 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 		phoneRegex := regexp.MustCompile(`^8\d{10}$`)
 		if !phoneRegex.MatchString(phone) {
-			http.Error(w, "Некорректный формат номера телефона", http.StatusBadRequest)
+			http.Error(w, "Номер телефона должен начинаться с 8 и содержать 11 цифр!!!", http.StatusBadRequest)
 			return
 		}
 
@@ -163,17 +165,20 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		var idUsers int
 		var hashedPassword string
 		err = stmt.QueryRow(phone).Scan(&idUsers, &hashedPassword)
-		if err != nil {
-			log.Printf("Ошибка авторизации для номера %s: %v", phone, err)
-			http.Error(w, "Неверный номер телефона или пароль", http.StatusUnauthorized)
-			return
-		}
-
-		if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
-			log.Printf("Ошибка авторизации: неверный пароль для номера %s", phone)
-			http.Error(w, "Неверный номер телефона или пароль", http.StatusUnauthorized)
-			return
-		}
+        if err == sql.ErrNoRows {
+            log.Printf("Ошибка авторизации: номер %s не зарегистрирован", phone)
+            http.Error(w, "Ошибка авторизации: номер телефона не зарегистрирован", http.StatusUnauthorized)
+            return
+        } else if err != nil {
+            log.Printf("Ошибка при запросе к БД: %v", err)
+            http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+            return
+        }
+        if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
+            log.Printf("Ошибка авторизации: неверный пароль для номера %s", phone)
+            http.Error(w, "Ошибка авторизации: неверный пароль", http.StatusUnauthorized)
+            return
+        }
 
 		log.Printf("Успешная авторизация: ID пользователя: %d, IP: %s, Номер телефона: %s", client.ClientID, ipAddress, phone)
 
@@ -188,8 +193,6 @@ func (s *Server) HandleLogin(w http.ResponseWriter, r *http.Request) {
 			Path:     "/",
 			HttpOnly: true,
 		})
-
-        // log.Printf("Для клиента с  IP: %s, ClientID: %d сгенерирован токен: %s", ipAddress, client.ClientID, token)
 
 		http.ServeFile(w, r, "allinf.html")
     }
@@ -512,11 +515,13 @@ func (s *Server) filterHandler(w http.ResponseWriter, r *http.Request) {
         http.Redirect(w, r, "/login", http.StatusFound) 
         return
     }
+    
+    log.Println("[DEBUG] Проверка JWT токена")
     var (
-        userData      UserData
-        token         string
-        idUsers       int
-        hasJWT        bool
+        userData UserData
+        token    string
+        idUsers  int
+        hasJWT   bool
     )
 
     if cookie, err := r.Cookie("jwt_token"); err == nil {
@@ -524,6 +529,7 @@ func (s *Server) filterHandler(w http.ResponseWriter, r *http.Request) {
             hasJWT = true
             token = cookie.Value
 
+            log.Println("[DEBUG] Токен проверен, загружаем данные пользователя")
             queryUser := `SELECT surname, name, middle_name, phone_number, email FROM users WHERE id_users = $1`
             row := db.QueryRow(queryUser, idUsers)
             if err := row.Scan(&userData.Surname, &userData.Name, &userData.MiddleName, &userData.PhoneNumber, &userData.Email); err != nil {
@@ -536,10 +542,19 @@ func (s *Server) filterHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     qp := r.URL.Query()
+    log.Printf("[DEBUG] Полученные параметры запроса: %+v", qp)
     yearFrom, yearTo := qp.Get("year-from"), qp.Get("year-to")
     engineVolumeFrom, engineVolumeTo := qp.Get("engine-volume-from"), qp.Get("engine-volume-to")
     priceFrom, priceTo := qp.Get("price-from"), qp.Get("price-to")
     powerFrom, powerTo := qp.Get("power-from"), qp.Get("power-to")
+    color := qp.Get("color")
+    color = strings.Trim(color, "[]\"") 
+    transmission := qp.Get("transmission")
+    transmission = strings.Trim(transmission, "[]\"") 
+
+
+    log.Printf("[DEBUG] Фильтры: yearFrom=%s, yearTo=%s, engineVolumeFrom=%s, engineVolumeTo=%s, priceFrom=%s, priceTo=%s, powerFrom=%s, powerTo=%s, color=%s, transmission=%s", 
+        yearFrom, yearTo, engineVolumeFrom, engineVolumeTo, priceFrom, priceTo, powerFrom, powerTo, color, transmission)
 
     query := `
         SELECT c.id_car, c.brand, c.model, c.year, c.engine_volume, c.power, c.transmission,
@@ -551,16 +566,33 @@ func (s *Server) filterHandler(w http.ResponseWriter, r *http.Request) {
         AND c.engine_volume BETWEEN $3 AND $4`
 
     args := []interface{}{yearFrom, yearTo, engineVolumeFrom, engineVolumeTo}
+    paramIndex := 5
 
     if priceFrom != "" && priceTo != "" {
-        query += " AND c.price BETWEEN $5 AND $6"
+        query += fmt.Sprintf(" AND c.price BETWEEN $%d AND $%d", paramIndex, paramIndex+1)
         args = append(args, priceFrom, priceTo)
+        paramIndex += 2
     }
     if powerFrom != "" && powerTo != "" {
-        query += " AND c.power BETWEEN $7 AND $8"
+        query += fmt.Sprintf(" AND c.power BETWEEN $%d AND $%d", paramIndex, paramIndex+1)
         args = append(args, powerFrom, powerTo)
+        paramIndex += 2
+    }
+    if color != "" {
+        query += fmt.Sprintf(" AND c.color = $%d", paramIndex)
+        args = append(args, color)
+        paramIndex++
+    }
+    if transmission != "" {
+        query += fmt.Sprintf(" AND c.transmission = $%d", paramIndex)
+        args = append(args, transmission) 
+        paramIndex++
     }
 
+
+    log.Printf("[DEBUG] SQL-запрос: %s", query)
+    log.Printf("[DEBUG] Аргументы запроса: %+v", args)
+    
     rows, err := db.Query(query, args...)
     if err != nil {
         log.Printf("[ERROR] Ошибка при запросе автомобилей: %v", err)
@@ -581,20 +613,54 @@ func (s *Server) filterHandler(w http.ResponseWriter, r *http.Request) {
         }
         cars = append(cars, car)
     }
+    log.Printf("[DEBUG] Найдено автомобилей: %d", len(cars))
+
+
+    page, err := strconv.Atoi(r.URL.Query().Get("page"))
+    if err != nil || page < 1 {
+        page = 1
+    }
+    carsPerPage := 8
+    offset := (page - 1) * carsPerPage
+    cars, totalCars, err := getPaginatedCars(db, carsPerPage, offset)
+    if err != nil {
+        log.Printf("Ошибка при извлечении данных о машинах: %v", err)
+        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+        return
+    }
+    totalPages := (totalCars + carsPerPage - 1) / carsPerPage
+
+    var carRows [][]Car
+    rowSize := 4
+    for i := 0; i < len(cars); i += rowSize {
+        end := i + rowSize
+        if end > len(cars) {
+            end = len(cars)
+        }
+        carRows = append(carRows, cars[i:end])
+    }
 
     data := struct {
         IsAuthenticated bool
         Username        string
         UserData        UserData
         Token           string
-        Cars            []Car
+        Cars          []Car
+        CarRows         [][]Car 
+        TotalPages    int
+        CurrentPage   int
     }{
         IsAuthenticated: hasJWT,
         Username:        userData.Name,
         UserData:        userData,
-        Token:           token,
-        Cars:            cars,
+        Token:           token, 
+        Cars:          cars,
+        CarRows:         carRows,
+        TotalPages:    totalPages,
+        CurrentPage:   page,
     }
+
+    log.Printf("Страница: %d / %d", page, totalPages)
 
     tmpl, err := template.ParseFiles("filterSearch.html")
     if err != nil {
@@ -607,7 +673,23 @@ func (s *Server) filterHandler(w http.ResponseWriter, r *http.Request) {
     tmpl.Execute(w, data)
 }
 
-// ***********************************************************************
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
@@ -623,6 +705,7 @@ func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
             hasJWT = true
         }
     }
+
     brand := r.URL.Query().Get("brand")
     if brand == "" {
         http.Error(w, "Не указан бренд", http.StatusBadRequest)
@@ -630,13 +713,31 @@ func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
     }
     fmt.Println("Запрос на бренд:", brand)
 
+    page, err := strconv.Atoi(r.URL.Query().Get("page"))
+    if err != nil || page < 1 {
+        page = 1
+    }
+    carsPerPage := 8
+    offset := (page - 1) * carsPerPage
+
+    var totalCars int
+    err = db.QueryRow(`SELECT COUNT(*) FROM cars WHERE LOWER(brand) = LOWER($1);`, brand).Scan(&totalCars)
+    if err != nil {
+        log.Printf("[%s] Ошибка подсчёта машин: %v", ipAddress, err)
+        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+        return
+    }
+    totalPages := (totalCars + carsPerPage - 1) / carsPerPage
+
     query := `SELECT cars.id_car, cars.brand, cars.model, cars.year, cars.engine_volume, cars.power, cars.transmission,
                 cars.color, cars.price, users.id_users, users.surname, users.name, users.middle_name, users.phone_number, users.email
                 FROM cars
                 JOIN users ON cars.id_seller = users.id_users
-                WHERE LOWER(cars.brand) = LOWER($1);`
-    
-    rows, err := db.Query(query, brand)
+                WHERE LOWER(cars.brand) = LOWER($1)
+                ORDER BY cars.id_car
+                LIMIT $2 OFFSET $3;`
+
+    rows, err := db.Query(query, brand, carsPerPage, offset)
     if err != nil {
         log.Printf("[%s] Ошибка при запросе автомобилей: %v", ipAddress, err)
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
@@ -668,16 +769,32 @@ func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
         }
     }
 
+    var carRows [][]Car
+    rowSize := 4
+    for i := 0; i < len(cars); i += rowSize {
+        end := i + rowSize
+        if end > len(cars) {
+            end = len(cars)
+        }
+        carRows = append(carRows, cars[i:end])
+    }
+
     data := struct {
-        Username string
-        UserData UserData
-        Cars     []Car
-        Brand    string
-        Auth     bool 
+        Username    string
+        UserData    UserData
+        Cars        []Car
+        Brand       string
+        Auth        bool 
+        CarRows     [][]Car 
+        TotalPages  int
+        CurrentPage int
     }{
-        Cars:  cars,
-        Brand: brand,
-        Auth:  hasJWT,
+        Cars:        cars,
+        Brand:       brand,
+        Auth:        hasJWT,
+        CarRows:     carRows,
+        TotalPages:  totalPages,
+        CurrentPage: page,
     }
 
     if hasJWT {
@@ -685,13 +802,13 @@ func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
         data.Username = userData.Name
     }
 
+    log.Printf("Страница: %d / %d", page, totalPages)
     tmpl, err := template.ParseFiles("specialsearcher.html")
     if err != nil {
         log.Printf("[%s] Ошибка загрузки шаблона: %v", ipAddress, err)
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
         return
     }
-
     err = tmpl.Execute(w, data)
     if err != nil {
         log.Printf("[%s] Ошибка рендеринга шаблона: %v", ipAddress, err)
@@ -699,6 +816,15 @@ func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+
+
+
+
+
+
+
+
+// ***********************************************************************
 
 
 func (s *Server) CarsInfoHandler(w http.ResponseWriter, r *http.Request){
@@ -847,7 +973,6 @@ func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Неверный метод запроса", http.StatusMethodNotAllowed)
         return
     }
-
     ipAddress := strings.Split(r.RemoteAddr, ":")[0]
     cookie, err := r.Cookie("jwt_token")
     if err != nil || cookie.Value == "" {
@@ -870,7 +995,6 @@ func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
         return
     }
     log.Printf("Пользователь с ID %d и IP %s перешел на главную страницу с объявлениями", client.ClientID, ipAddress)
-
     userData, err := getUserDataByID(db, idUsers)
     if err != nil {
         log.Printf("Ошибка при извлечении данных пользователя: %v", err)
@@ -878,30 +1002,74 @@ func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    cars, carCounts, err := getCarsAndCounts(db)
+    page, err := strconv.Atoi(r.URL.Query().Get("page"))
+    if err != nil || page < 1 {
+        page = 1
+    }
+    carsPerPage := 7
+    offset := (page - 1) * carsPerPage
+
+    cars, totalCars, err := getPaginatedCars(db, carsPerPage, offset)
     if err != nil {
         log.Printf("Ошибка при извлечении данных о машинах: %v", err)
-        http.Error(w, "Ошибка при извлечении данных о машинах", http.StatusInternalServerError)
+        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+        return
+    }
+
+    carsAll, carCounts, err := getCarsAndCounts(db)
+    if err != nil {
+        log.Printf("Ошибка при подсчете брендов: %v", err)
+        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+        return
+    }
+
+    colors, err := getDistinctValues(db, "color")
+    if err != nil {
+        log.Printf("Ошибка при получении списка цветов: %v", err)
+        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+        return
+    }
+
+    transmissions, err := getDistinctValues(db, "transmission")
+    if err != nil {
+        log.Printf("Ошибка при получении списка коробок передач: %v", err)
+        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
         return
     }
 
     brandColumns := DelenieBrandsIntoColumns(carCounts)
+    totalPages := (totalCars + carsPerPage - 1) / carsPerPage
+
 
     data := struct {
         Username    string
         UserData    UserData
         Token       string
-        CarData     map[string]int
-        Cars        []Car
+
+        Cars          []Car
+        CarsAll       []Car  
+        CarData       map[string]int
+
         BrandColumns [][]string 
+        Colors       []string
+        Transmissions []string
+        TotalPages    int
+        CurrentPage   int
     }{
         Username:    userData.Name,
         UserData:    userData,
         Token:       cookie.Value,
-        CarData:     carCounts,
-        Cars:        cars,
+        Cars:          cars,
+        CarsAll:       carsAll,  
+        CarData:       carCounts,
         BrandColumns: brandColumns, 
+        Colors:       colors,
+        Transmissions: transmissions,
+        TotalPages:    totalPages,
+        CurrentPage:   page,
     }
+
+
 
     tmpl, err := template.ParseFiles("allinf.html")
     if err != nil {
@@ -909,7 +1077,6 @@ func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
         return
     }
-
     err = tmpl.Execute(w, data)
     if err != nil {
         log.Printf("Ошибка при рендеринге шаблона: %v", err)
@@ -932,14 +1099,15 @@ func getUserDataByID(db *sql.DB, idUsers int) (UserData, error) {
 }
 
 
+
+
 func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet {
         http.Error(w, "Неверный метод запроса", http.StatusMethodNotAllowed)
         return
     }
 
-    log.Println("Все куки в запросе:", r.Cookies()) 
-
+    log.Println("Все куки в запросе:", r.Cookies())
     cookie, err := r.Cookie("jwt_token")
     if err != nil {
         log.Println("Кука jwt_token отсутствует (или не установлена)")
@@ -965,32 +1133,71 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
     }
     s.clientsMu.Unlock()
 
-    cars, carCounts, err := getCarsAndCounts(db)
+    page, err := strconv.Atoi(r.URL.Query().Get("page"))
+    if err != nil || page < 1 {
+        page = 1
+    }
+    carsPerPage := 7
+    offset := (page - 1) * carsPerPage
+
+    cars, totalCars, err := getPaginatedCars(db, carsPerPage, offset)
     if err != nil {
         log.Printf("Ошибка при извлечении данных о машинах: %v", err)
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
         return
     }
 
-    brandColumns := DelenieBrandsIntoColumns(carCounts)
-
-    data := struct {
-        Cars         []Car
-        CarData      map[string]int
-        BrandColumns [][]string
-    }{
-        Cars:        cars,
-        CarData:     carCounts,
-        BrandColumns: brandColumns,
+    carsAll, carCounts, err := getCarsAndCounts(db)
+    if err != nil {
+        log.Printf("Ошибка при подсчете брендов: %v", err)
+        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+        return
     }
 
+    colors, err := getDistinctValues(db, "color")
+    if err != nil {
+        log.Printf("Ошибка при получении списка цветов: %v", err)
+        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+        return
+    }
+
+    transmissions, err := getDistinctValues(db, "transmission")
+    if err != nil {
+        log.Printf("Ошибка при получении списка коробок передач: %v", err)
+        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+        return
+    }
+
+    brandColumns := DelenieBrandsIntoColumns(carCounts)
+    totalPages := (totalCars + carsPerPage - 1) / carsPerPage
+
+    data := struct {
+        Cars          []Car
+        CarsAll       []Car  
+        CarData       map[string]int
+        BrandColumns  [][]string
+        Colors        []string
+        Transmissions []string
+        TotalPages    int
+        CurrentPage   int
+    }{
+        Cars:          cars,
+        CarsAll:       carsAll,  
+        CarData:       carCounts,
+        BrandColumns:  brandColumns,
+        Colors:        colors,
+        Transmissions: transmissions,
+        TotalPages:    totalPages,
+        CurrentPage:   page,
+    }
+
+    log.Printf("Страница: %d / %d", page, totalPages)
     tmpl, err := template.ParseFiles("HomePage.html")
     if err != nil {
         log.Printf("Ошибка загрузки шаблона: %v", err)
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
         return
     }
-
     w.Header().Set("Content-Type", "text/html")
     if err := tmpl.Execute(w, data); err != nil {
         log.Printf("Ошибка при рендеринге шаблона: %v", err)
@@ -998,16 +1205,34 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+func getDistinctValues(db *sql.DB, column string) ([]string, error) {
+    query := fmt.Sprintf("SELECT DISTINCT %s FROM cars ORDER BY %s", column, column)
+    rows, err := db.Query(query)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
 
+    var values []string
+    for rows.Next() {
+        var value string
+        if err := rows.Scan(&value); err != nil {
+            return nil, err
+        }
+        values = append(values, value)
+    }
+    return values, nil
+}
 func DelenieBrandsIntoColumns(carData map[string]int) [][]string {
     var brands []string
     for brand := range carData {
         brands = append(brands, brand)
     }
 
+    sort.Strings(brands) 
     var brandColumns [][]string
-    for i := 0; i < len(brands); i += 4 {
-        end := i + 4
+    for i := 0; i < len(brands); i += 5 {
+        end := i + 5
         if end > len(brands) {
             end = len(brands)
         }
@@ -1029,10 +1254,8 @@ func getCarsAndCounts(db *sql.DB) ([]Car, map[string]int, error) {
         return nil, nil, err
     }
     defer rows.Close()
-
     var cars []Car
     carCounts := make(map[string]int)
-
     for rows.Next() {
         var car Car
         err := rows.Scan(
@@ -1046,11 +1269,45 @@ func getCarsAndCounts(db *sql.DB) ([]Car, map[string]int, error) {
         cars = append(cars, car)
         carCounts[car.Brand]++ 
     }
-
     return cars, carCounts, nil
 }
+func getPaginatedCars(db *sql.DB, limit, offset int) ([]Car, int, error) {
+    query := `
+        SELECT 
+            cars.id_car, cars.brand, cars.model, cars.year, cars.engine_volume, cars.power,
+            cars.transmission, cars.color, cars.price, cars.id_seller,
+            users.surname, users.name, users.middle_name, users.phone_number, users.email,
+            COUNT(*) OVER() AS total_count
+        FROM cars
+        JOIN users ON cars.id_seller = users.id_users
+        ORDER BY cars.id_car
+        LIMIT $1 OFFSET $2
+    `
 
+    rows, err := db.Query(query, limit, offset)
+    if err != nil {
+        return nil, 0, err
+    }
+    defer rows.Close()
 
+    var cars []Car
+    var totalCars int
+
+    for rows.Next() {
+        var car Car
+        err := rows.Scan(
+            &car.ID, &car.Brand, &car.Model, &car.Year, &car.EngineVolume, 
+            &car.Power, &car.Transmission, &car.Color, &car.Price, &car.SellerID,
+            &car.SellerSurname, &car.SellerName, &car.SellerMiddleName, &car.SellerPhone, &car.SellerEmail,
+            &totalCars,
+        )
+        if err != nil {
+            return nil, 0, err
+        }
+        cars = append(cars, car)
+    }
+    return cars, totalCars, nil
+}
 
 
 
@@ -1188,4 +1445,6 @@ func main() {
 
 	defer db.Close()
 	CreateAndStartServer("HomePage.html", "192.168.0.125", "8080")
+    	// CreateAndStartServer("HomePage.html", "192.168.145.47", "8080")
+
 }

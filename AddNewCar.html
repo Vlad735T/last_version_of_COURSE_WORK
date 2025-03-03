@@ -5,15 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Добавить автомобиль</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-            background-color: #f4f4f4;
-            text-align: center;
-        }
+
         /* Верхняя панель */
         .header {
+            width: 100%;
+            position: fixed;  
+            top: 0;
+            left: 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -21,6 +19,7 @@
             color: white;
             padding: 10px 20px;
             box-sizing: border-box;
+            z-index: 1000;  
         }
         .site-name {
             font-size: 24px;
@@ -66,7 +65,6 @@
             top: 100%;
             right: 0;
             min-width: 200px;
-            max-width: 100%;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             z-index: 10;
             border-radius: 6px;
@@ -88,9 +86,6 @@
         .profile-options button:hover {
             background-color: #005f8f;
         }
-
-
-        /* Кнопка Главная */
         .home-button {
             background-color: #0077b5;
             color: white;
@@ -105,43 +100,93 @@
             background-color: #005f8f;
         }
 
+        .error {
+            border: 2px solid #ff4d4d !important;
+            background-color: #ffe6e6 !important;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 15px; /* Отступ сверху, чтобы контейнер не заезжал под шапку */
+            overflow-x: hidden; 
+            width: 100vw; 
+        }
+
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center;
+            margin-top: 80px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
 
         form {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            display: inline-block;
-            text-align: left;
-        }
-        input {
+            display: flex;
+            flex-direction: column;
+            gap: 15px; 
             width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            max-height: 450px; /* Ограничение высоты формы */
+            overflow-y: auto;
+            padding-right: 10px; 
         }
         label {
             font-weight: bold;
-            display: block;
-            margin-top: 10px;
+            color: #555;
         }
-
-        button {
-            padding: 10px 20px;
+        input, select {
+            width: 100%;
+            box-sizing: border-box; 
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
             font-size: 16px;
-            background: #f2f2f2; /* Светло-серый цвет */
-            color: #333; /* Темный текст */
-            border: 1px solid #d1d1d1; /* Граница, чтобы кнопка выглядела аккуратно */
-            cursor: pointer;
-            border-radius: 5px;
-            margin-top: 10px;
-            transition: background 0.3s ease, box-shadow 0.3s ease;
+            margin: 0 auto;
         }
-
-        button:hover {
-            background: #e0e0e0; /* Чуть темнее при наведении */
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            color: #fff;
+            transition: 0.3s;
+            margin: 0 5px;
+        }
+        .submit {
+            background-color: #0077b5;
+        }
+        .submit:hover {
+            background-color: #005f92;
+        }
+        .cancel {
+            background-color: #ccc;
+            color: #333;
+        }
+        .cancel:hover {
+            background-color: #b0b0b0;
         }
 
     </style>
@@ -156,7 +201,7 @@
                 <h2 tabindex="0" class="username">{{ .Username }}</h2>
                 <div class="profile-options">
                     <button onclick="window.location.href = '/mycar'">Мои объявления</button>
-                    <button onclick="window.location.href = '/addcars'">Разместить объявление</button>
+                    <button onclick="window.location.href = '/addcssars'">Разместить объявление</button>
                     <button onclick="window.location.href = '/settings'">Управление профилем</button>
                     <button onclick="logout()">Выйти</button>
                 </div>
@@ -164,37 +209,46 @@
         </div>
     </div>
 
+    <div class="container">
+        <h2>Добавление автомобиля</h2>
+        <form id="addCarForm">
+            <label for="brand">Марка:</label>
+            <input type="text" id="brand" name="brand" maxlength="20" oninput="validateTextInput(this)" required>
 
-    <h2>Добавление автомобиля</h2>
-    <form id="addCarForm">
-        <label>Марка:</label>
-        <input type="text" id="brand" name="brand" maxlength="20" oninput="validateTextInput(this)" required>
+            <label for="model">Модель:</label>
+            <input type="text" id="model" name="model" maxlength="20" oninput="validateModelInput(this)" required>
 
-        <label>Модель:</label>
-        <input type="text" id="model" name="model" maxlength="20" oninput="validateModelInput(this)" required>
+            <label for="year">Год выпуска:</label>
+            <input type="text" id="year" name="year" maxlength="4" oninput="validateYear(this)" required>
 
-        <label>Год выпуска:</label>
-        <input type="text" id="year" name="year" maxlength="4" oninput="validateYear(this)" required>
+            <label for="price">Цена (₽):</label>
+            <input type="text" id="price" name="price" maxlength="9" oninput="validateNumber(this)" required>
 
-        <label>Цена (₽):</label>
-        <input type="text" id="price" name="price" maxlength="9" oninput="validateNumber(this)" required>
+            <label for="engineVolume">Объем двигателя (л):</label>
+            <input type="text" id="engineVolume" name="engineVolume" maxlength="4" oninput="validateEngineVolume(this)" required>
 
-        <label>Объем двигателя (л):</label>
-        <input type="text" id="engineVolume" name="engineVolume" maxlength="4" oninput="validateEngineVolume(this)" required>
+            <label for="power">Мощность (л.с.):</label>
+            <input type="text" id="power" name="power" maxlength="4" oninput="validatePower(this)" required>
 
-        <label>Мощность (л.с.):</label>
-        <input type="text" id="power" name="power" maxlength="4" oninput="validateNumber(this)" required>
+            <label for="transmission">Коробка передач:</label>
+            <select id="transmission" name="transmission" required>
+                <option value="" disabled selected>Выберите тип</option>
+                <option value="МКПП">МКПП - Механическая коробка передач</option>
+                <option value="АКПП">АКПП - Автоматическая коробка передач</option>
+                <option value="РКПП">РКПП - Робот (гибрид автоматики и механики)</option>
+                <option value="CVT">CVT - Вариатор</option>
+            </select>
 
-        <label>Коробка передач:</label>
-        <input type="text" id="transmission" name="transmission" maxlength="20" oninput="validateTextInput(this)" required>
+            <label for="color">Цвет:</label>
+            <input type="text" id="color" name="color" maxlength="20" oninput="validateTextInput(this)" required>
 
-        <label>Цвет:</label>
-        <input type="text" id="color" name="color" maxlength="20" oninput="validateTextInput(this)" required>
+            <div class="button-group">
+                <button type="button" class="submit" onclick="addCar()">Добавить</button>
+                <button type="button" class="cancel" onclick="window.location.href='/allinf'">Отмена</button>
+            </div>
+        </form>
+    </div>
 
-        <button type="button" onclick="addCar()">Добавить</button>
-        <button type="button" class="cancel" onclick="window.location.href='/allinf'">Отмена</button>
-    </form>
-    
     <script>
 
         const profileCard = document.querySelector('.profile-card');
@@ -219,21 +273,109 @@
             }
         });
 
-        async function addCar() {
+
+        function validateTextInput(input) {
+            input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё]/g, '');
+            capitalizeFirstLetter(input);
+        }
+        function validateModelInput(input) {
+            input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё0-9]/g, '');
+            capitalizeFirstLetter(input);
+        }
+        function capitalizeFirstLetter(input) {
+            if (input.value.length > 0) {
+                input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1);
+            }
+        }
+        function validateNumber(input) {
+            input.value = input.value.replace(/\D/g, '');
+            if (input.value.length > 1 && input.value[0] === '0') {
+                input.value = input.value.slice(1);
+            }
+        }
+        function validatePower(input) {
+            input.value = input.value.replace(/\D/g, '');
+            if (input.value.length > 1 && input.value[0] === '0') {
+                input.value = input.value.slice(1);
+            }
+            let num = parseInt(input.value);
+            if (num > 2300) {
+                input.value = "2300"; 
+            } 
+        }
+        function validateEngineVolume(input) {
+            input.value = input.value.replace(/[^0-9.]/g, '');
+            if (input.value.startsWith(".")) {
+                input.value = "0" + input.value;
+            }
+            const dotCount = (input.value.match(/\./g) || []).length;
+            if (dotCount > 1) {
+                input.value = input.value.replace(/\.+$/, '');
+            }
+            if (input.value.startsWith("0") && input.value[1] !== "." && input.value.length > 1) {
+                input.value = input.value.slice(1);
+            }
+            let match = input.value.match(/^(\d{0,2})(\.\d{0,1})?$/);
+            if (!match) {
+                input.value = input.value.slice(0, -1);
+                return;
+            }
+            let num = parseFloat(input.value);
+            if (num > 15.0) {
+                input.value = "15.0"; 
+            }   
+        }
+        function validateYear(input) {
+            input.value = input.value.replace(/\D/g, '');
+            if (input.value.length > 1 && input.value[0] === '0') {
+                input.value = input.value.slice(1);
+            }
+            if (input.value.length === 4) {
+                let year = parseInt(input.value);
+                if (year < 1970) {
+                    input.value = "1970";
+                } else if (year > 2025) {
+                    input.value = "2025";
+                }
+            }
+        }
+
+
+        async function addCar() { 
             const form = document.getElementById('addCarForm');
+
+            document.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
 
             if (!/^\d{4}$/.test(document.getElementById("year").value)) {
                 alert("Год выпуска должен содержать ровно 4 цифры!");
+                document.getElementById("year").classList.add("error");
                 return;
             }
-            
+
+            ["brand", "model", "color"].forEach(id => {
+                const input = document.getElementById(id);
+                capitalizeFirstLetter(input);
+            });
+
             const formData = new FormData(form);
+            let hasError = false;
 
             for (let [key, value] of formData.entries()) {
+                const input = document.querySelector(`[name=${key}]`);
                 if (!value.trim()) {
-                    alert(`Ошибка: Поле "${document.querySelector(`[name=${key}]`).previousElementSibling.innerText}" не заполнено.`);
-                    return;
+                    input.classList.add("error"); 
+                    hasError = true;
                 }
+            }
+            const transmission = formData.get("transmission");
+            if (!transmission) {
+                document.getElementById("transmission").classList.add("error");
+                hasError = true;
+            }
+
+            if (hasError) {
+                alert("Пожалуйста, заполните все обязательные поля!");
+                return;
             }
 
             try {
@@ -254,54 +396,11 @@
             }
         }
 
-        function validateTextInput(input) {
-            input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё]/g, '');
-        }
-        function validateModelInput(input) {
-            input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё0-9]/g, '');
-        }
-        function validateNumber(input) {
-            input.value = input.value.replace(/\D/g, '');
-            if (input.value.length > 1 && input.value[0] === '0') {
-                input.value = input.value.slice(1);
-            }
-        }
-        function validateEngineVolume(input) {
-            input.value = input.value.replace(/[^0-9.]/g, '');
-            if (input.value.startsWith(".")) {
-                input.value = "0" + input.value;
-            }
-            const dotCount = (input.value.match(/\./g) || []).length;
-            if (dotCount > 1) {
-                input.value = input.value.replace(/\.+$/, '');
-            }
-            if (input.value.startsWith("0") && input.value[1] !== "." && input.value.length > 1) {
-                input.value = input.value.slice(1);
-            }
-            let match = input.value.match(/^(\d{0,2})(\.\d{0,1})?$/);
-            if (!match) {
-                input.value = input.value.slice(0, -1);
-                return;
-            }
-            let num = parseFloat(input.value);
-            if (num > 99.9) {
-                input.value = "99.9";
-            }
-        }
-        function validateYear(input) {
-            input.value = input.value.replace(/\D/g, '');
-            if (input.value.length > 1 && input.value[0] === '0') {
-                input.value = input.value.slice(1);
-            }
-            if (input.value.length === 4) {
-                let year = parseInt(input.value);
-                if (year < 1970) {
-                    input.value = "1970";
-                } else if (year > 2025) {
-                    input.value = "2025";
-                }
-            }
-        }
+        document.querySelectorAll("input, select").forEach(input => {
+            input.addEventListener("input", () => input.classList.remove("error"));
+        });
+
+
 
         function logout() {
             fetch('/logout', {
@@ -318,7 +417,6 @@
             .catch(error => console.error("Ошибка выхода:", error));
         }
 
-        
     </script>
 </body>
 </html>
