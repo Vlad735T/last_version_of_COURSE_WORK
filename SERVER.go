@@ -622,22 +622,27 @@ func (s *Server) filterHandler(w http.ResponseWriter, r *http.Request) {
     }
     carsPerPage := 8
     offset := (page - 1) * carsPerPage
-    cars, totalCars, err := getPaginatedCars(db, carsPerPage, offset)
-    if err != nil {
-        log.Printf("Ошибка при извлечении данных о машинах: %v", err)
-        http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
-        return
+
+    var paginatedCars []Car
+    totalCars := len(cars) 
+    if offset < totalCars {
+        end := offset + carsPerPage
+        if end > totalCars {
+            end = totalCars
+        }
+        paginatedCars = cars[offset:end]
     }
+
     totalPages := (totalCars + carsPerPage - 1) / carsPerPage
 
     var carRows [][]Car
     rowSize := 4
-    for i := 0; i < len(cars); i += rowSize {
+    for i := 0; i < len(paginatedCars); i += rowSize {
         end := i + rowSize
-        if end > len(cars) {
-            end = len(cars)
+        if end > len(paginatedCars) {
+            end = len(paginatedCars)
         }
-        carRows = append(carRows, cars[i:end])
+        carRows = append(carRows, paginatedCars[i:end])
     }
 
     data := struct {
@@ -672,24 +677,6 @@ func (s *Server) filterHandler(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "text/html")
     tmpl.Execute(w, data)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
@@ -815,14 +802,6 @@ func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
     }
 }
-
-
-
-
-
-
-
-
 
 // ***********************************************************************
 
@@ -965,8 +944,6 @@ func (s *Server) CarsInfoHandler(w http.ResponseWriter, r *http.Request){
 	}
 
 }
-
-
 
 func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet {
@@ -1146,6 +1123,7 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
         return
     }
+    totalPages := (totalCars + carsPerPage - 1) / carsPerPage
 
     carsAll, carCounts, err := getCarsAndCounts(db)
     if err != nil {
@@ -1153,23 +1131,19 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
         return
     }
-
     colors, err := getDistinctValues(db, "color")
     if err != nil {
         log.Printf("Ошибка при получении списка цветов: %v", err)
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
         return
     }
-
     transmissions, err := getDistinctValues(db, "transmission")
     if err != nil {
         log.Printf("Ошибка при получении списка коробок передач: %v", err)
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
         return
     }
-
     brandColumns := DelenieBrandsIntoColumns(carCounts)
-    totalPages := (totalCars + carsPerPage - 1) / carsPerPage
 
     data := struct {
         Cars          []Car
@@ -1204,7 +1178,6 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
     }
 }
-
 func getDistinctValues(db *sql.DB, column string) ([]string, error) {
     query := fmt.Sprintf("SELECT DISTINCT %s FROM cars ORDER BY %s", column, column)
     rows, err := db.Query(query)
@@ -1308,8 +1281,6 @@ func getPaginatedCars(db *sql.DB, limit, offset int) ([]Car, int, error) {
     }
     return cars, totalCars, nil
 }
-
-
 
 
 func (s *Server)  LogoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -1445,6 +1416,6 @@ func main() {
 
 	defer db.Close()
 	CreateAndStartServer("HomePage.html", "192.168.0.125", "8080")
-    	// CreateAndStartServer("HomePage.html", "192.168.145.47", "8080")
+    // CreateAndStartServer("HomePage.html", "192.168.229.47", "8080")
 
 }

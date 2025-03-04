@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Результаты поиска</title>
     <style>
-        .car-list { margin-top: 20px; }
-        .car-item { border-bottom: 1px solid #ddd; padding: 10px; }
+
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', Arial, sans-serif;
+            font-size: 18px;
             background-color: #f4f4f4;
             margin: 0;
             padding: 0;
@@ -17,41 +17,46 @@
 
         /* Верхняя панель */
         .header {
+            font-size: 20px; 
             display: flex;
             justify-content: space-between;
             align-items: center;
             background-color: #333;
             color: white;
-            padding: 10px 20px;
+            padding: 20px 40px;
             box-sizing: border-box;
+            margin-bottom: 40px;
         }
         .site-name {
-            font-size: 24px;
+            font-size: 28px; 
             font-weight: bold;
             text-transform: uppercase;
         }
+        /* Профиль пользователя */
         .user-profile {
             display: flex;
             align-items: center;
+            position: relative; 
         }
         .profile-card {
+            font-size: 18px; 
             position: relative;
             display: inline-block;
             cursor: pointer;
             background-color: #fff;
-            padding: 10px 15px;
-            border-radius: 8px;
+            padding: 12px 18px;
+            border-radius: 10px;
             border: 1px solid #ddd;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            margin-left: 10px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+            margin-left: 15px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
         .profile-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transform: scale(1.08);
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.25);
         }
         .username {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             color: #333;
             cursor: pointer;
@@ -60,104 +65,85 @@
         .username:hover {
             color: #0077b5;
         }
+        /* Меню профиля */
         .profile-options {
+            font-size: 18px; 
             display: none;
             position: absolute;
             background-color: #fff;
             border: 1px solid #ddd;
-            padding: 10px;
+            padding: 12px;
             top: 100%;
             right: 0;
-            min-width: 200px;
+            min-width: 220px;
             max-width: 100%;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
             z-index: 10;
-            border-radius: 6px;
+            border-radius: 8px;
         }
         .profile-card:hover .profile-options {
             display: block;
         }
+        /* Кнопки в выпадающем меню */
         .profile-options button {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             background-color: #0077b5;
             color: white;
+            font-size: 18px;
             border: none;
             text-align: center;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            margin-bottom: 6px;
         }
         .profile-options button:hover {
             background-color: #005f8f;
         }
-
-
         /* Кнопка Главная */
         .home-button {
+            font-size: 18px; 
             background-color: #0077b5;
             color: white;
-            padding: 10px 15px;
+            padding: 12px 18px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            margin-left: 10px;
+            margin-left: 12px;
         }
         .home-button:hover {
             background-color: #005f8f;
         }
         /* Кнопка Войти */
         .profile-button {
-            padding: 10px 20px;
+            font-size: 18px; 
+            padding: 12px 24px;
             background-color: #0077b5;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             text-align: center;
-            transition: background-color 0.3s ease;
-            text-decoration: none; 
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            text-decoration: none;
             margin-left: 15px;
         }
         .profile-button:hover {
             background-color: #005f8f;
+            transform: scale(1.05);
         }
-
-
-        /* Для надписи авторизация */
-        .auth-notice {
-            background-color: #0077b5;
-            color: #fff;
-            padding: 15px;
-            border: 2px solid #005f8f;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            text-align: left;
-            width: fit-content;
-            max-width: 800px;
-            margin: 10px auto 0 20px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            transition: background-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        .auth-notice:hover {
-            background-color: #145de6;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        }   
-
-
-
 
 
         .car-row {
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-between; /* Разбросать по ширине */
+            justify-content: space-between;
             margin-bottom: 20px;
+            gap: 15px; 
+            padding: 0 15px; 
         }
-
         .car-item {
             width: 23%;
             box-sizing: border-box;
@@ -168,12 +154,28 @@
             text-align: center;
             transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease;
         }
-
         .car-item:hover {
-            transform: scale(1.05); /* Увеличение на 5% */
-            background: rgba(0, 102, 255, 0.1); /* Синий фон с прозрачностью */
-            border-color: #0066ff; /* Синий контур */
+            transform: scale(1.05); 
+            background: rgba(0, 102, 255, 0.1); 
+            border-color: #0066ff;
         }
+
+
+        .auth-button, .search-button {
+            background: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .auth-button:hover, .search-button:hover {
+            background: #0056b3;
+        }
+
+
         .pagination {
             display: flex;
             justify-content: center;
@@ -194,13 +196,71 @@
         #prevPage:hover, #nextPage:hover {
             background: #0056b3; 
         }
-        .auth-notice p {
-            margin: 0;
-            text-decoration: underline;
+
+
+        .no-results {
+            text-align: center;
+            padding: 30px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 500px;
+        }
+        .no-results-image {
+            width: 120px;
+            margin-bottom: 10px;
+        }
+        .no-results-text {
+            font-size: 18px;
+            color: #555;
+        }
+        .back-to-home {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        .back-to-home:hover {
+            background-color: #0056b3;
         }
 
 
-
+        /* Текст специальный */
+        .search-info {
+            margin: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        /* Для уведомления об авторизации */
+        .auth-notice {
+            background: linear-gradient(135deg, #0077b5, #005f8f);
+            color: #ffffff;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            max-width: 600px;
+            margin: 20px auto;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+        }
+        .auth-notice:hover {
+            background: linear-gradient(135deg, #005f8f, #004a73);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+            transform: scale(1.02);
+        }
+        .auth-notice p {
+            margin: 0;
+            text-decoration: none;
+        }
 
     </style>
 </head>
@@ -209,21 +269,25 @@
     <div class="header">
         <div class="site-name">АвтоНск</div>
         <div class="user-profile">
-            <button class="home-button" onclick="window.location.href = '/allinf'">Главная</button>
+            {{ if .Auth }}
+                <button class="home-button" onclick="window.location.href = '/allinf'">Главная</button>
+            {{ else }}
+                <button class="home-button" onclick="window.location.href = '/'">Главная</button>
+            {{ end }}
 
-                {{ if .Username }}
-                    <div class="profile-card">
-                        <h2 tabindex="0" class="username">{{ .Username }}</h2>
-                        <div class="profile-options">
-                            <button onclick="window.location.href = '/mycar'">Мои объявления</button>
-                            <button onclick="window.location.href = '/addcars'">Разместить объявление</button>
-                            <button onclick="window.location.href = '/settings'">Управление профилем</button>
-                            <button onclick="logout()">Выйти</button>
-                        </div>
+            {{ if .Username }}
+                <div class="profile-card">
+                    <h2 tabindex="0" class="username">{{ .Username }}</h2>
+                    <div class="profile-options">
+                        <button onclick="window.location.href = '/mycar'">Мои объявления</button>
+                        <button onclick="window.location.href = '/addcars'">Разместить объявление</button>
+                        <button onclick="window.location.href = '/settings'">Управление профилем</button>
+                        <button onclick="logout()">Выйти</button>
                     </div>
-                {{ else }}
-                    <button class="profile-button" onclick="window.location.href = '/login'">Войти</button>
-                {{ end }}
+                </div>
+            {{ else }}
+                <button class="profile-button" onclick="window.location.href = '/login'">Войти</button>
+            {{ end }}
         </div>
     </div>
 
@@ -263,7 +327,10 @@
             <button id="nextPage">Следующая</button>
             <span id="totalPages" style="display: none;">{{ .TotalPages }}</span> 
         </div>
+
     </div>
+
+
 
 
     <script>
