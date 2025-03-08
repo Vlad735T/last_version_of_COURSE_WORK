@@ -213,7 +213,7 @@
         <h2>Добавление автомобиля</h2>
         <form id="addCarForm">
             <label for="brand">Марка:</label>
-            <input type="text" id="brand" name="brand" maxlength="20" oninput="validateTextInput(this)" required>
+            <input type="text" id="brand" name="brand" maxlength="20" oninput="validateBrandInput(this)" required>
 
             <label for="model">Модель:</label>
             <input type="text" id="model" name="model" maxlength="20" oninput="validateModelInput(this)" required>
@@ -222,7 +222,7 @@
             <input type="text" id="year" name="year" maxlength="4" oninput="validateYear(this)" required>
 
             <label for="price">Цена (₽):</label>
-            <input type="text" id="price" name="price" maxlength="9" oninput="validateNumber(this)" required>
+            <input type="text" id="price" name="price" maxlength="9" oninput="validatePrice(this)" required>
 
             <label for="engineVolume">Объем двигателя (л):</label>
             <input type="text" id="engineVolume" name="engineVolume" maxlength="4" oninput="validateEngineVolume(this)" required>
@@ -240,7 +240,7 @@
             </select>
 
             <label for="color">Цвет:</label>
-            <input type="text" id="color" name="color" maxlength="20" oninput="validateTextInput(this)" required>
+            <input type="text" id="color" name="color" maxlength="20" oninput="validateColorInput(this)" required>
 
             <div class="button-group">
                 <button type="button" class="submit" onclick="addCar()">Добавить</button>
@@ -274,9 +274,24 @@
         });
 
 
-        function validateTextInput(input) {
+
+        function validateBrandInput(input) {
+            input.value = input.value.replace(/[^A-Za-z]/g, ''); 
+            if (input.value.length > 0) {
+                input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1).toLowerCase(); 
+            }
+        }
+        function validatePrice(input) {
+            input.value = input.value.replace(/[^0-9]/g, '');
+            if (input.value.length > 1 && input.value[0] === '0') {
+                input.value = input.value.slice(1);
+            }
+        }
+        function validateColorInput(input) {
             input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё]/g, '');
-            capitalizeFirstLetter(input);
+            if (input.value.length > 0) {
+                input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1).toLowerCase(); 
+            }
         }
         function validateModelInput(input) {
             input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё0-9]/g, '');
@@ -285,12 +300,6 @@
         function capitalizeFirstLetter(input) {
             if (input.value.length > 0) {
                 input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1);
-            }
-        }
-        function validateNumber(input) {
-            input.value = input.value.replace(/\D/g, '');
-            if (input.value.length > 1 && input.value[0] === '0') {
-                input.value = input.value.slice(1);
             }
         }
         function validatePower(input) {
@@ -305,25 +314,30 @@
         }
         function validateEngineVolume(input) {
             input.value = input.value.replace(/[^0-9.]/g, '');
+
             if (input.value.startsWith(".")) {
                 input.value = "0" + input.value;
             }
+
             const dotCount = (input.value.match(/\./g) || []).length;
             if (dotCount > 1) {
                 input.value = input.value.replace(/\.+$/, '');
             }
+
             if (input.value.startsWith("0") && input.value[1] !== "." && input.value.length > 1) {
                 input.value = input.value.slice(1);
             }
+
             let match = input.value.match(/^(\d{0,2})(\.\d{0,1})?$/);
             if (!match) {
                 input.value = input.value.slice(0, -1);
                 return;
             }
+
             let num = parseFloat(input.value);
             if (num > 15.0) {
-                input.value = "15.0"; 
-            }   
+                input.value = "15.0";
+            }
         }
         function validateYear(input) {
             input.value = input.value.replace(/\D/g, '');

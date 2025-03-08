@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мои автомобили</title>
     <style>
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', Arial, sans-serif;
             background-color: #f4f4f4;
             margin: 0;
             padding: 0;
@@ -18,35 +19,37 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #333;
+            background: #333;
             color: white;
-            padding: 10px 20px;
+            padding: 15px 20px;
             box-sizing: border-box;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
         .site-name {
             font-size: 24px;
             font-weight: bold;
             text-transform: uppercase;
         }
+
+        /* Профиль пользователя */
         .user-profile {
             display: flex;
             align-items: center;
         }
         .profile-card {
+            background-color: #000;
             position: relative;
-            display: inline-block;
-            cursor: pointer;
-            background-color: #fff;
-            padding: 10px 15px;
-            border-radius: 8px;
+            background: white;
+            padding: 12px 15px;
+            border-radius: 10px;
             border: 1px solid #ddd;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             margin-left: 10px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
         .profile-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.25);
         }
         .username {
             font-size: 18px;
@@ -61,107 +64,171 @@
         .profile-options {
             display: none;
             position: absolute;
-            background-color: #fff;
+            background: white;
             border: 1px solid #ddd;
             padding: 10px;
             top: 100%;
             right: 0;
-            min-width: 200px;
-            max-width: 100%;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            min-width: 220px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
             z-index: 10;
-            border-radius: 6px;
         }
         .profile-card:hover .profile-options {
             display: block;
         }
         .profile-options button {
             width: 100%;
-            padding: 10px;
-            background-color: #0077b5;
+            padding: 12px;
+            background: linear-gradient(135deg, #0077b5, #005f8f);
             color: white;
             border: none;
             text-align: center;
             border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
         }
         .profile-options button:hover {
-            background-color: #005f8f;
+            background: #004a70;
         }
 
-
-        /* Кнопка Главная */
+        /* Кнопка "Главная" */
         .home-button {
-            background-color: #0077b5;
+            background: linear-gradient(135deg, #0077b5, #005f8f);
             color: white;
-            padding: 10px 15px;
+            padding: 12px 18px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
-            margin-left: 10px;
+            transition: all 0.3s ease;
+            font-size: 16px;
         }
         .home-button:hover {
-            background-color: #005f8f;
+            background: #004a70;
         }
-
-
-        /* Кнопки для автомобилей */
-        .car-card button {
-            background-color: #0077b5;
-            color: white;
-            padding: 10px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
+        .car-card {
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 15px; /* Уменьшаем отступы внутри карточки */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             width: 100%;
-            margin-top: 10px;
+            max-width: 300px;
+            overflow: hidden;
+            min-height: 350px;
+        }
+        /* Поднятие карточки при наведении */
+        .car-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            background-color: #f7f7f7;
+        }
+        .car-card button {
+            background: linear-gradient(135deg, #0077b5, #005f8f);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 12px;
         }
         .car-card button:hover {
-            background-color: #005f8f;
+            background: #004a70;
         }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 15px;
+            }
+            .user-profile {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+            }
+            .profile-card {
+                width: 100%;
+                text-align: center;
+            }
+            .profile-options {
+                width: 100%;
+                position: relative;
+            }
+            .home-button {
+                width: 100%;
+                margin-top: 10px;
+            }
+            .car-card {
+                width: 100%;
+            }
+        }
+
 
 
         /* Контейнер с объявлениями */
         .cars-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+            gap: 80px; 
             padding: 20px;
             margin-top: 30px;
-        }
-        .car-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .car-card:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            justify-items: center; 
+            grid-auto-rows: minmax(300px, auto); 
         }
         .car-title {
-            font-size: 18px;
+            font-size: 18px; 
             font-weight: bold;
-            margin-bottom: 10px;
+            color: #333;
+            margin-bottom: 12px;
+            text-align: center;
+            font-family: 'Arial', sans-serif;
         }
         .car-details {
-            font-size: 14px;
-            color: #666;
+            font-size: 16px;
+            color: #777;
+            margin-bottom: 13px;
         }
         .car-price {
-            font-size: 20px;
+            font-size: 22px; 
             font-weight: bold;
             color: #0077b5;
-            margin-top: 10px;
+            margin-top: 8px;
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .cars-container {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+                gap: 20px; 
+                padding: 10px; 
+            }
+
+            .car-title {
+                font-size: 16px; 
+                margin-bottom: 8px;
+            }
+
+            .car-details {
+                font-size: 14px; 
+                margin-bottom: 10px;
+            }
+
+            .car-price {
+                font-size: 18px; 
+                margin-top: 6px;
+            }
         }
 
-        /* Модальное окно для обработки данных по машине */
+
+
+        /* Модальное окно */
         .modal {
-            display: none;
+            display: none; 
             position: fixed;
             top: 0;
             left: 0;
@@ -170,6 +237,7 @@
             background: rgba(0, 0, 0, 0.5);
             justify-content: center;
             align-items: center;
+            z-index: 1000; 
         }
         .modal-content {
             background: white;
@@ -177,15 +245,17 @@
             border-radius: 10px;
             width: 100%;
             max-width: 400px;
-            max-height: 80vh; /* Ограничение по высоте */
-            overflow-y: auto; 
+            max-height: 80vh;
+            overflow-y: auto;
             position: relative;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             text-align: center;
         }
+        /* Заголовки */
         .modal-content h3 {
             margin-bottom: 15px;
             color: #333;
+            font-size: 20px;
         }
         .modal-content form {
             display: flex;
@@ -217,6 +287,22 @@
         .modal-content input:focus {
             border-color: #0077b5;
         }
+        .modal-content select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+            text-align: center; 
+            appearance: none; /* Убирает стандартные стрелки */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+        .modal-content select:focus {
+            border-color: #0077b5;
+            outline: none;
+        }
         .modal-content button {
             background-color: #0077b5;
             color: white;
@@ -235,7 +321,6 @@
         .modal-content button:hover {
             background-color: #005f8f;
         }
-
         .close {
             position: absolute;
             top: 10px;
@@ -248,6 +333,40 @@
         .close:hover {
             color: #333;
         }
+        .error {
+            border: 2px solid #ff4d4d !important;
+            background-color: #ffe6e6 !important;
+        }
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 90%; 
+                max-width: none; 
+                padding: 20px; 
+            }
+
+            .modal-content h3 {
+                font-size: 18px;
+            }
+
+            .modal-content input,
+            .modal-content select {
+                font-size: 14px; 
+                padding: 8px; 
+            }
+
+            .modal-content button {
+                font-size: 14px; 
+                padding: 8px; 
+            }
+
+            .close {
+                font-size: 20px; 
+                top: 5px; 
+                right: 10px;
+            }
+        }
+
+
 
 
         /* Стиль для модального окна */
@@ -284,12 +403,15 @@
             font-size: 18px;
             font-weight: bold;
         }
-
+        body.no-scroll {
+            overflow: hidden;
+        }
         @media (max-width: 500px) {
             #carDetailsModal .modal-content {
                 width: 95%;
             }
         }
+
 
         /* Кнопка "Разместить объявление" */
         .add-car-btn {
@@ -306,9 +428,54 @@
         .add-car-btn:hover {
             background-color: #0077b5;
         }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        #prevPage, #nextPage {
+            background: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+        #prevPage:hover, #nextPage:hover {
+            background: #0056b3; 
+        }
+        @media (max-width: 768px) {
+            .add-car-btn {
+                font-size: 14px; 
+                padding: 8px 12px;
+                margin-right: 10px; 
+            }
 
+            .add-car-btn:hover {
+                background-color: #005f8f; 
+            }
+
+            .pagination {
+                flex-direction: column; 
+                margin-top: 15px;
+            }
+
+            #prevPage, #nextPage {
+                font-size: 14px; 
+                padding: 8px 12px;
+            }
+
+            #prevPage:hover, #nextPage:hover {
+                background: #003f7f;
+            }
+        }
 
     </style>
+
 </head>
 <body>
 
@@ -332,42 +499,56 @@
 
     <div class="cars-container">
         <h3>Список доступных объявлений о машинах</h3>
+        
         {{ if .Cars }}
             {{ range .Cars }}
-                <div class="car-card">
-                    <div class="car-title">{{ .Brand }} {{ .Model }} ({{ .Year }})</div>
-                    <div class="car-details">
-                        <p>Объем двигателя: {{ .EngineVolume }} л</p>
-                        <p>Мощность: {{ .Power }} л.с.</p>
-                        <p>Трансмиссия: {{ .Transmission }}</p>
-                        <p>Цвет: {{ .Color }}</p>
-                        <p class="car-price">{{ .Price }} ₽</p>
-                    </div>
-                    <button onclick="openCarDetailsModal(this)" 
-                            data-brand="{{ .Brand }}"
-                            data-model="{{ .Model }}"
-                            data-year="{{ .Year }}"
-                            data-price="{{ .Price }}"
-                            data-power="{{ .Power }}"
-                            data-engine="{{ .EngineVolume }}"
-                            data-transmission="{{ .Transmission }}"
-                            data-color="{{ .Color }}"
-                            data-seller-name="{{ .SellerName }}"
-                            data-seller-middle-name="{{ .SellerMiddleName }}"
-                            data-seller-phone="{{ .SellerPhone }}"
-                            data-seller-email="{{ .SellerEmail }}">
-                        Подробнее
-                    </button>
-                    <button class="edit-button" 
-                        onclick="openModal('{{ .ID }}', '{{ .Brand }}', '{{ .Model }}', '{{ .Year }}', '{{ .Price }}', 
-                        '{{ .EngineVolume }}', '{{ .Power }}', '{{ .Transmission }}', '{{ .Color }}')">Редактировать
+                {{ range . }}
+                    <div class="car-card">
+                        <div class="car-title">{{ .Brand }} {{ .Model }} ({{ .Year }})</div>
+                        <div class="car-details">
+                            <p>Объем двигателя: {{ .EngineVolume }} л</p>
+                            <p>Мощность: {{ .Power }} л.с.</p>
+                            <p>Трансмиссия: {{ .Transmission }}</p>
+                            <p>Цвет: {{ .Color }}</p>
+                            <p class="car-price">{{ .Price }} ₽</p>
+                        </div>
+                        <button onclick="openCarDetailsModal(this)" 
+                                data-brand="{{ .Brand }}"
+                                data-model="{{ .Model }}"
+                                data-year="{{ .Year }}"
+                                data-price="{{ .Price }}"
+                                data-power="{{ .Power }}"
+                                data-engine="{{ .EngineVolume }}"
+                                data-transmission="{{ .Transmission }}"
+                                data-color="{{ .Color }}"
+                                data-seller-name="{{ .SellerName }}"
+                                data-seller-middle-name="{{ .SellerMiddleName }}"
+                                data-seller-phone="{{ .SellerPhone }}"
+                                data-seller-email="{{ .SellerEmail }}">
+                            Подробнее
                         </button>
-                </div>
+                        <button class="edit-button" 
+                                onclick="openModal('{{ .ID }}', '{{ .Brand }}', '{{ .Model }}', '{{ .Year }}', '{{ .Price }}', 
+                                '{{ .EngineVolume }}', '{{ .Power }}', '{{ .Transmission }}', '{{ .Color }}')">Редактировать
+                        </button>
+                        <button class="delete-button" onclick="deleteCar('{{ .ID }}')">Удалить</button>
+                    </div>
+                {{ end }}
             {{ end }}
+
         {{ else }}
             <p>У вас нет объявлений с автомобилями. <a href="/addcars">Добавить объявление</a>.</p>
         {{ end }}
-    </div>
+
+
+            <div class="pagination">
+            <button id="prevPage">Предыдущая</button>
+            <span id="currentPage">{{ .Page }}</span>
+            <button id="nextPage">Следующая</button>
+            <span id="totalPages" style="display: none;">{{ .TotalPages }}</span>
+
+        </div>
+    </div> 
 
 </main>
 
@@ -404,7 +585,7 @@
                 <input type="hidden" id="carID" name="carID">
                 
                 <label>Марка:</label>
-                <input type="text" id="brand" name="brand" maxlength="20" oninput="validateTextInput(this)">
+                <input type="text" id="brand" name="brand" maxlength="20" oninput="validateBrandInput(this)">
                 
                 <label>Модель:</label>
                 <input type="text" id="model" name="model" maxlength="20" oninput="validateModelInput(this)">
@@ -413,19 +594,25 @@
                 <input type="text" id="year" name="year" maxlength="4" oninput="validateYear(this)">
 
                 <label>Цена:</label>
-                <input type="text" id="price" name="price" maxlength="9" oninput="validateNumber(this)">
+                <input type="text" id="price" name="price" maxlength="9" oninput="validatePrice(this)">
 
                 <label>Объем двигателя (л):</label>
                 <input type="text" id="engineVolume" name="engineVolume" maxlength="4" oninput="validateEngineVolume(this)">
 
                 <label>Мощность (л.с.):</label>
-                <input type="text" id="power" name="power" maxlength="4" oninput="validateNumber(this)">
+                <input type="text" id="power" name="power" maxlength="4" oninput="validatePower(this)">
 
-                <label>Трансмиссия:</label>
-                <input type="text" id="transmission" name="transmission" maxlength="20" oninput="validateTextInput(this)">
+                <label for="transmission">Коробка передач:</label>
+                <select id="transmission" name="transmission" required>
+                    <option value="" disabled selected>Выберите тип</option>
+                    <option value="МКПП">МКПП</option>
+                    <option value="АКПП">АКПП</option>
+                    <option value="РКПП">РКПП</option>
+                    <option value="CVT">CVT</option>
+                </select>
 
                 <label>Цвет:</label>
-                <input type="text" id="color" name="color" maxlength="20" oninput="validateTextInput(this)">
+                <input type="text" id="color" name="color" maxlength="20" oninput="validateColorInput(this)">
 
                 <button type="button" onclick="updateCar()">Изменить данные</button>
             </form>
@@ -435,6 +622,25 @@
     </div>
 
 <script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+        let currentPage = parseInt(document.getElementById("currentPage").innerText);
+        const totalPages = parseInt(document.getElementById("totalPages").innerText);
+
+        document.getElementById("prevPage").addEventListener("click", function () {
+            if (currentPage > 1) {
+                window.location.href = `?page=${currentPage - 1}`;
+            }
+        });
+
+        document.getElementById("nextPage").addEventListener("click", function () {
+            if (currentPage < totalPages) {
+                window.location.href = `?page=${currentPage + 1}`;
+            }
+        });
+    });
+
+
 
     const profileCard = document.querySelector('.profile-card');
     const profileOptions = document.querySelector('.profile-options');
@@ -450,13 +656,14 @@
             if (!profileCard.matches(':hover')) {
                 profileOptions.style.display = 'none'; 
             }
-        }, 50); // Задержка 50 мс
+        }, 50); 
     });
     document.addEventListener('click', (event) => {
         if (!profileCard.contains(event.target)) {
             profileOptions.style.display = 'none';
         }
     });
+
 
 
     function openCarDetailsModal(button) {
@@ -474,13 +681,14 @@
         document.getElementById("modal-seller-phone").innerText = button.getAttribute("data-seller-phone");
         document.getElementById("modal-seller-email").innerText = button.getAttribute("data-seller-email");
 
+
         document.getElementById("carDetailsModal").style.display = "flex";
+        document.body.style.overflow = "hidden"; 
     }
     function closeCarDetailsModal() {
         document.getElementById("carDetailsModal").style.display = "none";
+        document.body.style.overflow = "auto"; 
     }
-
-
     function openModal(id, brand, model, year, price, engineVolume, power, transmission, color) {
         document.getElementById("carID").value = id;
         document.getElementById("brand").value = brand;
@@ -492,38 +700,123 @@
         document.getElementById("transmission").value = transmission;
         document.getElementById("color").value = color;
 
-        document.getElementById("editModal").style.display = "flex";
-
         document.getElementById("editForm").dataset.original = JSON.stringify({
             brand, model, year, price, engineVolume, power, transmission, color
         });
+
+        document.getElementById("editModal").style.display = "flex";
+        document.body.style.overflow = "hidden";
     }
     function closeModal() {
         document.getElementById("editModal").style.display = "none";
+        document.body.style.overflow = "auto";
     }
 
-    
-    async function updateCar() {
-        const form = document.getElementById("editForm");
-        const id = document.getElementById("carID").value;
-        const yearInput = document.getElementById("year").value.trim();
 
-        if (!/^\d{4}$/.test(yearInput)) {
-            alert("Год выпуска должен содержать ровно 4 цифры!");
+
+    function validateBrandInput(input) {
+        input.value = input.value.replace(/[^A-Za-z]/g, ''); 
+        if (input.value.length > 0) {
+            input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1).toLowerCase(); 
+        }
+    }
+    function validateModelInput(input) {
+        input.value = input.value.replace(/[^A-Za-z0-9]/g, '');
+        if (input.value.length > 0) {
+            input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1);
+        }
+    }   
+    function validateYear(input) {
+        input.value = input.value.replace(/\D/g, ''); 
+
+        if (input.value.length > 1 && input.value[0] === '0') {
+            input.value = input.value.slice(1); 
+        }
+
+        if (input.value.length === 4) {
+            let year = parseInt(input.value);
+
+            if (year < 1970) {
+                input.value = "1970";
+            } else if (year > 2025) {
+                input.value = "2025";
+            }
+        }
+    }
+    function validatePrice(input) {
+        input.value = input.value.replace(/[^0-9]/g, '');
+        if (input.value.length > 1 && input.value[0] === '0') {
+            input.value = input.value.slice(1);
+        }
+    }
+    function validateEngineVolume(input) {
+        input.value = input.value.replace(/[^0-9.]/g, '');
+
+        if (input.value.startsWith(".")) {
+            input.value = "0" + input.value;
+        }
+
+        const dotCount = (input.value.match(/\./g) || []).length;
+        if (dotCount > 1) {
+            input.value = input.value.replace(/\.+$/, '');
+        }
+
+        if (input.value.startsWith("0") && input.value[1] !== "." && input.value.length > 1) {
+            input.value = input.value.slice(1);
+        }
+
+        let match = input.value.match(/^(\d{0,2})(\.\d{0,1})?$/);
+        if (!match) {
+            input.value = input.value.slice(0, -1);
             return;
         }
 
+        let num = parseFloat(input.value);
+        if (num > 15.0) {
+            input.value = "15.0";
+        }
+    }
+    function validatePower(input) {
+        input.value = input.value.replace(/\D/g, '');
+        if (input.value.length > 1 && input.value[0] === '0') {
+            input.value = input.value.slice(1);
+        }
+        let num = parseInt(input.value);
+        if (num > 2300) {
+            input.value = "2300"; 
+        } 
+    }
+    function validateColorInput(input) {
+        input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё]/g, '');
+        if (input.value.length > 0) {
+            input.value = input.value.charAt(0).toUpperCase() + input.value.slice(1).toLowerCase(); 
+        }
+    }
+
+
+    async function updateCar() {
+        const form = document.getElementById("editForm");
+        const id = document.getElementById("carID").value;
+
+        const yearInput = document.getElementById("year").value.trim();
+        if (!/^\d{4}$/.test(yearInput)) {
+            const yearElement = document.getElementById("year");
+            yearElement.classList.add("error");
+            alert("Год выпуска должен содержать ровно 4 цифры!");
+            return;
+        }
 
         const updatedData = {
             brand: document.getElementById("brand").value.trim(),
             model: document.getElementById("model").value.trim(),
             year: parseInt(yearInput, 10), 
-            price: parseInt(document.getElementById("price").value.trim()), 
+            price: parseInt(document.getElementById("price").value.trim(), 10), 
             engineVolume: parseFloat(document.getElementById("engineVolume").value.trim()), 
             power: parseInt(document.getElementById("power").value.trim(), 10), 
             transmission: document.getElementById("transmission").value.trim(),
             color: document.getElementById("color").value.trim()
         };
+
         if (!validateFields(updatedData)) {
             return;
         }
@@ -535,13 +828,14 @@
                 changes.push(`${getFieldName(key)}: ${originalData[key]} → ${updatedData[key]}`);
             }
         }
+
         if (changes.length === 0) {
             alert("Нет изменений для сохранения!");
             return;
         }
 
         const formData = new FormData(form);
-            for (const pair of formData.entries()) {
+        for (const pair of formData.entries()) {
             console.log(pair[0] + ', ' + pair[1]);
         }
 
@@ -551,7 +845,6 @@
                 body: formData
             });
 
-            
             if (response.ok) {
                 alert("Данные успешно обновлены!");
                 window.location.href = "/mycar";
@@ -566,8 +859,13 @@
 
     function validateFields(data) {
         const textFields = ["brand", "model", "transmission", "color"];
+        
+        clearErrors();
+
         for (const field of textFields) {
+            const inputElement = document.getElementById(field);
             if (data[field] === "") {
+                inputElement.classList.add("error"); 
                 alert(`Поле "${getFieldName(field)}" не может быть пустым!`);
                 return false;
             }
@@ -580,14 +878,27 @@
         };
 
         for (const field in numberFields) {
+            const inputElement = document.getElementById(field);
+            if (isNaN(data[field]) || data[field] === "") {
+                inputElement.classList.add("error"); 
+                alert(`Поле "${getFieldName(field)}" не может быть пустым!`);
+                return false;
+            }
             if (parseFloat(data[field]) < numberFields[field].min) {
+                inputElement.classList.add("error"); 
                 alert(numberFields[field].message);
                 return false;
             }
         }
 
-        return true; 
+        return true;
     }
+
+    function clearErrors() {
+        const errorFields = document.querySelectorAll(".error");
+        errorFields.forEach(field => field.classList.remove("error"));
+    }
+
     function getFieldName(field) {
         const fieldNames = {
             brand: "Марка",
@@ -596,71 +907,39 @@
             price: "Цена",
             engineVolume: "Объем двигателя",
             power: "Мощность",
-            transmission: "Трансмиссия",
             color: "Цвет"
         };
         return fieldNames[field] || field;
     }
 
-    function validateTextInput(input) {
-        input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё]/g, '');
-    }
-    function validateModelInput(input) {
-        input.value = input.value.replace(/[^A-Za-zА-Яа-яЁё0-9]/g, '');
-    }
 
-    function validateNumber(input) {
-        input.value = input.value.replace(/\D/g, '');
-        
-        if (input.value.length > 1 && input.value[0] === '0') {
-            input.value = input.value.slice(1);
-        }
-    }
-    function validateEngineVolume(input) {
-        input.value = input.value.replace(/[^0-9.]/g, ''); // Удаляем все символы, кроме цифр и точки
 
-        if (input.value.startsWith(".")) {
-            input.value = "0" + input.value;
-        }
+    async function deleteCar(carID) {
+        if (confirm("Вы уверены, что хотите удалить это объявление?")) {
+            const formData = new FormData();
+            formData.append("carID", carID); 
 
-        const dotCount = (input.value.match(/\./g) || []).length;
-        if (dotCount > 1) {
-            input.value = input.value.replace(/\.+$/, '');
-        }
+            try {
+                const response = await fetch("/deletecar", {
+                    method: "POST",
+                    body: formData
+                });
 
-        if (input.value.startsWith("0") && input.value[1] !== "." && input.value.length > 1) {
-            input.value = input.value.slice(1); // Убираем ведущий ноль, если он не перед точкой
-        }
-
-        // Ограничение ввода до формата XX.X (не более 2 цифр перед точкой и 1 после)
-        let match = input.value.match(/^(\d{0,2})(\.\d{0,1})?$/);
-        if (!match) {
-            input.value = input.value.slice(0, -1);
-            return;
-        }
-
-        let num = parseFloat(input.value);
-        if (num > 99.9) {
-            input.value = "99.9";
-        }
-    }
-    function validateYear(input) {
-        input.value = input.value.replace(/\D/g, ''); // Убираем всё, кроме цифр
-
-        if (input.value.length > 1 && input.value[0] === '0') {
-            input.value = input.value.slice(1); // Запрещаем ввод 0 первым
-        }
-
-        if (input.value.length === 4) {
-            let year = parseInt(input.value);
-
-            if (year < 1970) {
-                input.value = "1970";
-            } else if (year > 2025) {
-                input.value = "2025";
+                if (response.ok) {
+                    alert("Объявление успешно удалено!");
+                    window.location.href = "/mycar"; 
+                } else {
+                    const errorMessage = await response.text();
+                    alert("Ошибка: " + errorMessage);
+                }
+            } catch (error) {
+                alert("Ошибка соединения с сервером");
             }
         }
     }
+
+
+
 
 
     function logout() {

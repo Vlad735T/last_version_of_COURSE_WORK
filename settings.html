@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Управление профилем</title>
     <style>
+
         body {
             font-family: Arial, sans-serif;
             background-color: #f9f9f9;
@@ -26,8 +28,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             padding: 20px;
-            width: 100%;
-            max-width: 400px;
+            width: 500px;
         }
         .editable {
             color: #0057b8;
@@ -64,7 +65,9 @@
             background-color: #333;
             color: white;
             padding: 10px 20px;
-            box-sizing: border-box;
+            width: 540px;
+            margin: 0 auto; 
+            box-sizing: border-box; 
         }
         .site-name {
             font-size: 24px;
@@ -165,7 +168,9 @@
             background-color: #0077b5;
         }
 
+
     </style>
+
 </head>
 <body>
 
@@ -211,21 +216,6 @@
 
     <script>
 
-        function logout() {
-            fetch('/logout', {
-                method: 'POST',
-                credentials: 'include' 
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data.message); 
-
-                localStorage.removeItem("jwt");
-                window.location.href = "/";
-            })
-            .catch(error => console.error("Ошибка выхода:", error));
-        }
-        
         const profileCard = document.querySelector('.profile-card');
         const profileOptions = document.querySelector('.profile-options');
         const username = document.querySelector('h2');
@@ -249,9 +239,6 @@
         });
 
 
-        function letters_conversions(str) { 
-            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-        }
 
         const russianRegex = /^[а-яА-ЯёЁ]+$/;
         const englishRegex = /^[a-zA-Z]+$/;
@@ -268,19 +255,21 @@
             inputElement.focus();
             document.getElementById("update-button").style.display = "block";
         }
-
         document.querySelectorAll(".editable").forEach(el => {
             el.addEventListener("click", function() {
                 toggleInput(this.id.replace("-text", ""));
             });
         });
-
         document.getElementById("change-password-button").addEventListener("click", function() {
             document.getElementById("new-password").style.display = "block";
             document.getElementById("confirm-password").style.display = "block";
             this.style.display = "none";
             document.getElementById("update-button").style.display = "block";
         });
+
+        function letters_conversions(str) { 
+            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+        }
 
         document.getElementById("update-button").addEventListener("click", async function() {
             const surname = document.getElementById("surname").value;
@@ -355,6 +344,24 @@
                 alert("Ошибка соединения с сервером");
             }
         });
+
+
+        function logout() {
+            fetch('/logout', {
+                method: 'POST',
+                credentials: 'include' 
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message); 
+
+                localStorage.removeItem("jwt");
+                window.location.href = "/";
+            })
+            .catch(error => console.error("Ошибка выхода:", error));
+        }
+
+
     </script>
 
 </body>

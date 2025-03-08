@@ -14,6 +14,7 @@
             padding: 0;
         }
 
+
         /* Верхняя панель */
         .header {
             font-size: 20px; 
@@ -405,6 +406,20 @@
             if (!profileCard.contains(event.target)) {
                 profileOptions.style.display = 'none';
             }
+        });
+        
+        function sendHeartbeat() {
+            fetch('/heartbeat', {
+                method: 'POST',
+            });
+        }
+
+        setInterval(sendHeartbeat, 1000);
+
+        window.addEventListener('beforeunload', function () {
+            fetch('/leave', {
+                method: 'POST',
+            });
         });
 
         function logout() {

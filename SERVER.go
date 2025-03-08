@@ -678,9 +678,27 @@ func (s *Server) filterHandler(w http.ResponseWriter, r *http.Request) {
     tmpl.Execute(w, data)
 }
 
-
 func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
     ipAddress := strings.Split(r.RemoteAddr, ":")[0]
+    s.clientsMu.Lock()
+
+    client, exists := s.clients[ipAddress]
+    if !exists {
+        client = ClientInfo{
+            ClientID:  s.nextID,
+            IPAddress: ipAddress,
+            Active:    true,
+        }
+        s.clients[ipAddress] = client
+        s.nextID++
+        s.activeClientsCount++
+    } else {
+        client.Active = true
+        s.clients[ipAddress] = client
+    }
+
+    s.clientsMu.Unlock()
+
     var userData UserData
     var idUsers int
     var hasJWT bool 
@@ -698,7 +716,6 @@ func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Не указан бренд", http.StatusBadRequest)
         return
     }
-    fmt.Println("Запрос на бренд:", brand)
 
     page, err := strconv.Atoi(r.URL.Query().Get("page"))
     if err != nil || page < 1 {
@@ -789,7 +806,9 @@ func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
         data.Username = userData.Name
     }
 
-    log.Printf("Страница: %d / %d", page, totalPages)
+    log.Printf("Пользователь %s (IP: %s) сделал запрос на поиск автомобилей бренда: %s", data.Username, ipAddress, brand)
+
+    // log.Printf("Страница: %d / %d", page, totalPages)
     tmpl, err := template.ParseFiles("specialsearcher.html")
     if err != nil {
         log.Printf("[%s] Ошибка загрузки шаблона: %v", ipAddress, err)
@@ -802,8 +821,6 @@ func (s *Server) searchCarsHandler(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
     }
 }
-
-// ***********************************************************************
 
 
 func (s *Server) CarsInfoHandler(w http.ResponseWriter, r *http.Request){
@@ -829,8 +846,9 @@ func (s *Server) CarsInfoHandler(w http.ResponseWriter, r *http.Request){
         return
     }
 
+
 	if r.Method == http.MethodGet {
-		log.Printf("Пользователь с ID %d и IP %s перешел на страницу с объявлением своих машин", client.ClientID, ipAddress)
+		// log.Printf("[%s] GET-запрос на получение информации о машинах", ipAddress)
 
 		userData, err := getUserDataByID(db, idUsers)
 		if err != nil {
@@ -839,24 +857,31 @@ func (s *Server) CarsInfoHandler(w http.ResponseWriter, r *http.Request){
 			return
 		}
 
+		page, err := strconv.Atoi(r.URL.Query().Get("page"))
+		if err != nil || page < 1 {
+			page = 1
+		}
+		// log.Printf("[%s] Запрошена страница: %d", ipAddress, page)
+
+		carsPerPage := 10
+		offset := (page - 1) * carsPerPage
+		// log.Printf("[%s] Вычислен offset: %d", ipAddress, offset)
+
 		query := `SELECT c.id_car, c.brand, c.model, c.year, c.engine_volume, c.power, 
 			c.transmission, c.color, c.price, u.id_users, u.name, u.surname, u.middle_name, 
 			u.phone_number, u.email 
 			FROM cars c 
 			JOIN users u ON c.id_seller = u.id_users 
-			WHERE c.id_seller = $1`
+			WHERE c.id_seller = $1 
+			ORDER BY c.id_car DESC 
+			LIMIT $2 OFFSET $3`
 
-		stmt, err := db.Prepare(query)
-		if err != nil {
-			log.Printf("[%s] Ошибка подготовки запроса: %v", ipAddress, err)
-			http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
-			return
-		}
-		defer stmt.Close()
+		// log.Printf("[%s] Выполнение SQL-запроса: %s, параметры: idUsers=%d, limit=%d, offset=%d",
+		// 	ipAddress, query, idUsers, carsPerPage, offset)
 
-		rows, err := stmt.Query(idUsers)
+		rows, err := db.Query(query, idUsers, carsPerPage, offset)
 		if err != nil {
-			log.Printf("[%s] Ошибка выполнения запроса: %v", ipAddress, err)
+			log.Printf("[%s] Ошибка выполнения SQL-запроса: %v", ipAddress, err)
 			http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
 			return
 		}
@@ -875,17 +900,46 @@ func (s *Server) CarsInfoHandler(w http.ResponseWriter, r *http.Request){
 			}
 			cars = append(cars, car)
 		}
+		// log.Printf("[%s] Найдено %d машин", ipAddress, len(cars))
+
+		var totalCars int
+		err = db.QueryRow(`SELECT COUNT(*) FROM cars WHERE id_seller = $1`, idUsers).Scan(&totalCars)
+		if err != nil {
+			log.Printf("[%s] Ошибка получения общего числа машин: %v", ipAddress, err)
+			http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
+			return
+		}
+		// log.Printf("[%s] Общее количество машин: %d", ipAddress, totalCars)
+
+		totalPages := (totalCars + carsPerPage - 1) / carsPerPage
+		// log.Printf("[%s] Вычислено количество страниц: %d", ipAddress, totalPages)
+
+		var carRows [][]Car
+		rowSize := 5
+		for i := 0; i < len(cars); i += rowSize {
+			end := i + rowSize
+			if end > len(cars) {
+				end = len(cars)
+			}
+			carRows = append(carRows, cars[i:end])
+		}
 
 		data := struct {
-			Username string
-			UserData UserData
-			Token    string
-			Cars     []Car
+			Username   string
+			UserData   UserData
+			Token      string
+			Cars       [][]Car
+			Page       int
+			TotalCars  int
+			TotalPages int
 		}{
-			Username: userData.Name,
-			UserData: userData,
-			Token:    cookie.Value,
-			Cars:     cars,
+			Username:   userData.Name,
+			UserData:   userData,
+			Token:      cookie.Value,
+			Cars:       carRows,
+			Page:       page,
+			TotalCars:  totalCars,
+			TotalPages: totalPages,
 		}
 
 		tmpl, err := template.ParseFiles("carperson.html")
@@ -901,8 +955,8 @@ func (s *Server) CarsInfoHandler(w http.ResponseWriter, r *http.Request){
 			http.Error(w, "Ошибка сервера", http.StatusInternalServerError)
 			return
 		}
-
-    } else if r.Method == http.MethodPost {
+		// log.Printf("[%s] Страница carperson.html успешно отрендерена", ipAddress)
+	} else if r.Method == http.MethodPost {
 		err = r.ParseMultipartForm(10 << 20) // 10MB лимит
 		if err != nil {
 			http.Error(w, "Ошибка обработки формы", http.StatusBadRequest)
@@ -944,6 +998,11 @@ func (s *Server) CarsInfoHandler(w http.ResponseWriter, r *http.Request){
 	}
 
 }
+
+// ***********************************************************************
+
+
+
 
 func (s *Server) HandleInfo(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet {
@@ -1084,7 +1143,7 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    log.Println("Все куки в запросе:", r.Cookies())
+    // log.Println("Все куки в запросе:", r.Cookies())
     cookie, err := r.Cookie("jwt_token")
     if err != nil {
         log.Println("Кука jwt_token отсутствует (или не установлена)")
@@ -1165,7 +1224,7 @@ func (s *Server) HandleRoot(w http.ResponseWriter, r *http.Request) {
         CurrentPage:   page,
     }
 
-    log.Printf("Страница: %d / %d", page, totalPages)
+    // log.Printf("Страница: %d / %d", page, totalPages)
     tmpl, err := template.ParseFiles("HomePage.html")
     if err != nil {
         log.Printf("Ошибка загрузки шаблона: %v", err)
@@ -1283,6 +1342,36 @@ func getPaginatedCars(db *sql.DB, limit, offset int) ([]Car, int, error) {
 }
 
 
+func deleteCarHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        http.Error(w, "Неверный метод", http.StatusMethodNotAllowed)
+        return
+    }
+    err := r.ParseMultipartForm(10 << 20) 
+    if err != nil {
+        http.Error(w, "Ошибка обработки формы", http.StatusBadRequest)
+        return
+    }
+    carID := r.FormValue("carID")
+    if carID == "" {
+        http.Error(w, "ID машины не передан", http.StatusBadRequest)
+        return
+    }
+
+    id, err := strconv.Atoi(carID)
+    if err != nil {
+        http.Error(w, "Неверный формат ID машины", http.StatusBadRequest)
+        return
+    }
+
+    _, err = db.Exec("DELETE FROM cars WHERE id_car = $1", id)
+    if err != nil {
+        http.Error(w, "Не удалось удалить объявление", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+}
 func (s *Server)  LogoutHandler(w http.ResponseWriter, r *http.Request) {
     http.SetCookie(w, &http.Cookie{
         Name:     "jwt_token",
@@ -1301,62 +1390,7 @@ func (s *Server)  LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-func (s *Server) HandleLeave(w http.ResponseWriter, r *http.Request) {
-	ipAddress := strings.Split(r.RemoteAddr, ":")[0]
-	s.clientsMu.Lock()
-	defer s.clientsMu.Unlock()
 
-	if client, exists := s.clients[ipAddress]; exists {
-		if client.Active { // Уменьшаем счетчик только если клиент действительно был активен
-			s.activeClientsCount--
-		}
-		client.Status = "отключен"
-		client.Disconnected = time.Now()
-		client.Active = false
-		s.clients[ipAddress] = client
-		log.Printf("Клиент с IP: %s отключен в %s", ipAddress, client.Disconnected.Format("2006-01-02 15:04:05"))
-	}
-}
-func (s *Server) HandleHeartbeat(w http.ResponseWriter, r *http.Request) {
-	ipAddress := strings.Split(r.RemoteAddr, ":")[0]
-	s.clientsMu.Lock()
-	defer s.clientsMu.Unlock()
-
-	if client, exists := s.clients[ipAddress]; exists {
-		if !client.Active {
-			log.Printf("Клиент с IP: %s повторно подключен в %s", ipAddress, time.Now().Format("2006-01-02 15:04:05"))
-			s.activeClientsCount++ 
-		}
-
-		client.Status = "подключен"
-		client.Active = true
-		client.Disconnected = time.Time{}
-		s.clients[ipAddress] = client
-	} else {
-		log.Printf("Клиент с IP %s не найден", ipAddress)
-	}
-}
-func (s *Server) CheckClientStatus() {
-	ticker := time.NewTicker(3 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		s.clientsMu.Lock()
-		activeCount := 0
-		for ip, client := range s.clients {
-			if client.Active {
-				activeCount++
-				log.Printf("Клиент с ID: %d, IP: %s, статус: подключен", client.ClientID, ip)
-			} else {
-				log.Printf("Клиент с ID: %d, IP: %s, статус: отключен", client.ClientID, ip)
-			}
-		}
-
-		s.activeClientsCount = activeCount
-		log.Printf("В данный момент к серверу подключены: %d человек(а)", activeCount)
-		s.clientsMu.Unlock()
-	}
-}
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -1373,11 +1407,12 @@ func CreateAndStartServer(templatePath, ip, port string) *Server {
 		htmlTmpl:           htmlTmpl,
 	}
 
-	http.HandleFunc("/", server.HandleRoot)
-	http.HandleFunc("/leave", server.HandleLeave)
-	http.HandleFunc("/heartbeat", server.HandleHeartbeat)
+	// http.HandleFunc("/leave", server.HandleLeave)
+	// http.HandleFunc("/heartbeat", server.HandleHeartbeat)
     http.HandleFunc("/logout", server.LogoutHandler)
+    http.HandleFunc("/deletecar", deleteCarHandler)
 
+	http.HandleFunc("/", server.HandleRoot)
 	http.HandleFunc("/login", server.HandleLogin)
 	http.HandleFunc("/register", server.HandleRegister)
 
@@ -1388,9 +1423,6 @@ func CreateAndStartServer(templatePath, ip, port string) *Server {
 
 	http.HandleFunc("/settings", server.HandleSettingsAndUpdate)
 	http.HandleFunc("/update_inf", server.HandleSettingsAndUpdate)
-
-
-
 
 	http.HandleFunc("/specialsearcher", server.searchCarsHandler) 
 	http.HandleFunc("/filter", server.filterHandler) 

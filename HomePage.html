@@ -357,6 +357,11 @@
             transform: scale(1.05);
         }
 
+
+
+
+
+        
     </style>
 </head>
 <body>
@@ -543,6 +548,7 @@
             document.getElementById("carModal").style.display = "none";
             document.body.classList.remove("modal-open"); 
         }
+
         document.addEventListener("DOMContentLoaded", function () {
             let currentPage = parseInt(new URLSearchParams(window.location.search).get("page")) || 1;
             const totalPages = parseInt(document.getElementById("totalPages").textContent) || 1;
@@ -668,6 +674,7 @@
 
             return true;
         }
+
         function validateNumberInput() {
             document.querySelectorAll("input").forEach(input => {
                 input.addEventListener("input", function () {
@@ -676,6 +683,7 @@
                 });
             });
         }
+
         function validatePower() {
             document.querySelectorAll("input").forEach(input => {
                 input.addEventListener("input", function () {
@@ -689,11 +697,13 @@
                 });
             });
         }
+
         function resetFilters() {
             const fieldsToReset = ["price-from", "price-to", "power-from", "power-to", "transmission", "color"];
             fieldsToReset.forEach(id => document.getElementById(id).value = "");
             document.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
         }
+
         function validateFilters() {
             let isValid = true;
             const params = new URLSearchParams();
