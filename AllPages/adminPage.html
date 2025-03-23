@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ Панель</title>
+    <style>
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; 
+            height: 100vh;
+        }
+
+        /* Верхняя панель */
+        .header {
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+            background-color: #333; 
+            color: white; 
+            padding: 15px 25px;
+            box-sizing: border-box;
+            margin-bottom: 30px;
+        }
+        .site-name {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase; 
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 18px;
+        }
+
+        .user-profile span {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        /* Имя пользователя */
+        .user-profile b {
+            color: #00d1ff;
+            font-size: 19px;
+            font-weight: bold;
+        }
+
+        .profile-card button {
+            background-color: #0077b5;
+            color: white;
+            font-size: 16px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            font-weight: bold;
+        }
+        .profile-card button:hover {
+            background-color: #005f8f; 
+            transform: scale(1.05);
+        }
+
+
+        /* Контейнер с контентом */
+        .content-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            height: calc(100vh - 60px); 
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .car-list, .user-list {
+            flex: 1; 
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            height: calc(100% - 50px);
+            overflow-y: auto; 
+            margin-bottom: 20px;
+        }
+        .car-list h3, .user-list h3 {
+            font-size: 21.5px;
+            margin-bottom: 10px;
+        }
+        .cars-container, .users-container {
+            padding: 10px;
+        }
+        .car-item, .user-item {
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;  
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Позиционирование кнопок удаления */
+        .delete-car, .delete-user {
+            position: absolute;  
+            bottom: 10px;
+            right: 10px; 
+            padding: 8px 12px;
+            font-size: 1.2em;
+            color: white;
+            background-color: #ff6b6b;  
+            border: none;
+            border-radius: 50%; 
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .delete-car:hover, .delete-user:hover {
+            background-color: #ff4747;
+        }
+
+        /* Позиционирование кнопок изменения роли */
+        .role-buttons-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .promote-role, .demote-role {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .promote-role {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .promote-role:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        .demote-role {
+            background-color: #f44336; 
+            color: white;
+        }
+        .demote-role:hover {
+            background-color: #d32f2f;
+            transform: scale(1.05);
+        }
+
+
+        .car-info, .user-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+        }
+        .car-info h4, .user-info h4 {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+        .car-info p, .user-info p {
+            font-size: 1.1em;
+            color: #555;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            margin-bottom: 20px; 
+        }
+
+        #prevCarPage, #nextCarPage, #prevUserPage, #nextUserPage {
+            background: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+        #prevCarPage:hover, #nextCarPage:hover, #prevUserPage:hover, #nextUserPage:hover {
+            background: #0056b3;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="site-name">АвтоНск - Админ Панель</div>
+        <div class="user-profile">
+            <span>Здравствуйте: <b>{{ .CurrentUser.Name }}</b></span>
+            <div class="profile-card">
+                <button onclick="logout()">Выйти</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-container">
+        <div class="car-list">
+            <h3>Список доступных автомобилей</h3>
+            <div class="cars-container">
+                {{ range .Cars }}
+                <div class="car-item" data-car-id="{{ .ID }}">
+                    <div class="car-info">
+                        <h4>{{ .Brand }} {{ .Model }} ({{ .Year }}) — {{ .Price }} ₽</h4>
+                        <p>Объем двигателя: {{ .EngineVolume }} л; Мощность: {{ .Power }} л.с.; </p>
+                        <p>Коробка передач: {{ .Transmission }}; Цвет: {{ .Color }};</p>
+                        <p>ФИО владельца: {{ .SellerSurname }} {{ .SellerName }} {{ .SellerMiddleName }};</p>
+                    </div>
+                    <button class="delete-car" onclick="deleteEntity('car', '{{ .ID }}')">❌ Удалить</button>
+                </div>
+                {{ end }}
+
+                <div class="pagination">
+                    <button id="prevCarPage" disabled>⬅️ Предыдущая</button>
+                    <span id="currentCarPage">1</span>
+                    <button id="nextCarPage">Следующая ➡️</button>
+                    <span id="totalCarPages" style="display: none;">{{ .TotalCarPages }}</span>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="user-list"> 
+            <h3>Список пользователей</h3>
+
+            <div class="users-container">
+                {{ range .Users }}
+                <div class="user-item" data-user-id="{{ .ID }}" data-phone-number="{{ .PhoneNumber }}" data-role="{{ .Role }}">
+
+                    <div class="user-info">
+                        <h4>{{ .Surname }} {{ .Name }} {{ .MiddleName }}</h4>
+                        <p>Телефон: {{ .PhoneNumber }}; Электронная почта: {{ .Email }};</p>
+                        <p>Роль: {{ .RoleStr }}; Дата регистрации: {{ .TimeCreated }};</p>
+                    </div>
+
+                    <div class="role-buttons-container">
+                        {{ if eq .Role 0 }}
+                            <button class="promote-role" onclick="changeRole('{{ .ID }}', 'admin')">Повысить роль до админа</button>
+                        {{ end }}
+                        
+                        {{ if eq .Role 1 }}
+                            <button class="demote-role" onclick="changeRole('{{ .ID }}', 'user')">Снизить роль до пользователя</button>
+                        {{ end }}
+                    </div>
+
+                    <button class="delete-user" onclick="deleteEntity('user', '{{ .ID }}')">❌ Удалить</button>
+
+                </div>
+                {{ end }}
+            </div>
+
+            <div class="pagination">
+                <button id="prevUserPage" disabled>⬅️ Предыдущая</button>
+                <span id="currentUserPage">1</span>
+                <button id="nextUserPage">Следующая ➡️</button>
+                <span id="totalUserPages" style="display: none;">{{ .TotalUserPages }}</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+
+        var currentUserPhoneNumber = "{{ .CurrentUser.PhoneNumber }}";
+        document.querySelectorAll('.user-item').forEach(function (userItem) {
+            var userPhoneNumber = userItem.getAttribute('data-phone-number');
+
+            if (userPhoneNumber === currentUserPhoneNumber) {
+                var roleButtons = userItem.querySelector('.role-buttons-container');
+                if (roleButtons) {
+                    roleButtons.style.display = 'none'; 
+                }
+                
+                var deleteButton = userItem.querySelector('.delete-user');
+                if (deleteButton) {
+                    deleteButton.style.display = 'none';
+                }
+            }
+        });
+
+
+        function changeRole(userId, newRole) {
+            const url = `/change_role?id=${userId}&role=${newRole}`;
+            
+            fetch(url, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Роль пользователя изменена на ${newRole}`);
+                        location.reload(); 
+                    } else {
+                        alert('Ошибка при изменении роли.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    alert('Ошибка при запросе изменения роли.');
+                });
+        }
+
+        function deleteEntity(type, id) {
+            let url;
+            if (type === 'car') {
+                url = `/delete_car?id=${id}`;
+            } else if (type === 'user') {
+                url = `/delete_user?id=${id}`;
+            } else {
+                console.error('Неизвестный тип для удаления');
+                return;
+            }
+
+            fetch(url, { method: "DELETE" })
+                .then(response => {
+                    if (response.ok) {
+                        alert(`${type === 'car' ? 'Автомобиль' : 'Пользователь'} удалён!`);
+                        location.reload(); 
+                    } else {
+                        alert(`Ошибка удаления ${type === 'car' ? 'автомобиля' : 'пользователя'}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    alert(`Ошибка при удалении ${type === 'car' ? 'автомобиля' : 'пользователя'}`);
+                });
+        }
+
+
+        document.addEventListener("DOMContentLoaded", function () {
+            let currentCarPage = parseInt(new URLSearchParams(window.location.search).get("car_page")) || 1;
+            let currentUserPage = parseInt(new URLSearchParams(window.location.search).get("user_page")) || 1;
+
+            const totalCarPages = parseInt(document.getElementById("totalCarPages").textContent) || 1;
+            const totalUserPages = parseInt(document.getElementById("totalUserPages").textContent) || 1;
+
+            document.getElementById("currentCarPage").textContent = currentCarPage;
+            document.getElementById("currentUserPage").textContent = currentUserPage;
+
+            document.getElementById("prevCarPage").disabled = currentCarPage <= 1;
+            document.getElementById("nextCarPage").disabled = currentCarPage >= totalCarPages;
+
+            document.getElementById("prevUserPage").disabled = currentUserPage <= 1;
+            document.getElementById("nextUserPage").disabled = currentUserPage >= totalUserPages;
+
+            document.getElementById("prevCarPage").addEventListener("click", function () {
+                if (currentCarPage > 1) {
+                    currentCarPage--;
+                    updatePage("car_page", currentCarPage);
+                }
+            });
+
+            document.getElementById("nextCarPage").addEventListener("click", function () {
+                if (currentCarPage < totalCarPages) {
+                    currentCarPage++;
+                    updatePage("car_page", currentCarPage);
+                }
+            });
+
+            document.getElementById("prevUserPage").addEventListener("click", function () {
+                if (currentUserPage > 1) {
+                    currentUserPage--;
+                    updatePage("user_page", currentUserPage);
+                }
+            });
+
+            document.getElementById("nextUserPage").addEventListener("click", function () {
+                if (currentUserPage < totalUserPages) {
+                    currentUserPage++;
+                    updatePage("user_page", currentUserPage);
+                }
+            });
+
+            function updatePage(pageParam, pageNumber) {
+                const url = new URL(window.location.href);
+                url.searchParams.set(pageParam, pageNumber);
+                window.location.href = url.toString();
+            }
+        });
+
+        function logout() {
+            fetch('/logout', {
+                method: 'POST',
+                credentials: 'include' 
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message); 
+
+                localStorage.removeItem("jwt");
+                window.location.href = "/";
+            })
+            .catch(error => console.error("Ошибка выхода:", error));
+        }
+
+    </script>
+</body>
+</html>

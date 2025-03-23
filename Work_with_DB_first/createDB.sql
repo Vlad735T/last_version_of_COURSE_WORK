@@ -2,7 +2,6 @@ CREATE EXTENSION IF NOT EXISTS dblink;
 
 DO $$
 BEGIN
-    -- Проверяем, существует ли база данных с именем 'car_dealer'
     IF NOT EXISTS (
         SELECT FROM pg_database WHERE datname = 'car_dealer'
     ) THEN
@@ -29,10 +28,11 @@ CREATE TABLE IF NOT EXISTS users (
     id_users SERIAL PRIMARY KEY,
     surname VARCHAR(25) NOT NULL,
     name VARCHAR(20) NOT NULL,
-    middle_name  VARCHAR(20),
+    middle_name VARCHAR(20),
     phone_number VARCHAR(11) UNIQUE NOT NULL,
     email VARCHAR(50) UNIQUE NOT NULL,
     hashed_password VARCHAR(100) NOT NULL,
+    role INT DEFAULT 0 CHECK (role IN (0, 1)), -- 0 = пользователь, 1 = админ
     time_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
 );
 

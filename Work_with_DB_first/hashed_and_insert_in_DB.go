@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	_ "github.com/lib/pq" // Для работы с PostgreSQL
+	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -17,18 +17,18 @@ func HashPassword(password string) (string, error) {
 	return string(hash), nil
 }
 
-func INSERT_INTO_TABLES(db *sql.DB, users [][6]string) error {
+func INSERT_INTO_TABLES(db *sql.DB, users [][7]interface{}) error {
 	for _, user := range users {
-		hashed_password, err := HashPassword(user[5])
+		hashed_password, err := HashPassword(user[5].(string))
 		if err != nil {
 			return err
 		}
 
 		_, err = db.Exec(`
-			INSERT INTO users (surname, name, middle_name, phone_number, email, hashed_password)
-			VALUES ($1, $2, $3, $4, $5, $6)
+			INSERT INTO users (surname, name, middle_name, phone_number, email, hashed_password, role)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
 			ON CONFLICT (phone_number) DO NOTHING`,
-			user[0], user[1], user[2], user[3], user[4], hashed_password,
+			user[0], user[1], user[2], user[3], user[4], hashed_password, user[6],
 		)
 
 		if err != nil {
@@ -39,7 +39,6 @@ func INSERT_INTO_TABLES(db *sql.DB, users [][6]string) error {
 }
 
 func INSERT_INTO_CARS(db *sql.DB, cars [][9]interface{}) error {
-	// Проверяем, есть ли данные в таблице cars
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM cars").Scan(&count)
 	if err != nil {
@@ -74,10 +73,9 @@ func main() {
 	}
 	defer db.Close()
 
-	// Срез с пользователями
-	users := [][6]string{
-		{"Макаров", "Стефан", "Евгеньевич", "89012481919", "fWZHkkp@mail.ru", "12345"},
-		{"Чернов", "Петр", "Алексеевич", "89217956666", "4fpyyuk@microsoft.com", "hash13"},
+	users := [][7]interface{}{
+		{"Макаров", "Стефан", "Евгеньевич", "89012481919", "fWZHkkp@mail.ru", "12345", 1}, 
+		{"Чернов", "Петр", "Алексеевич", "89217956666", "4fpyyuk@microsoft.com", "hash13", 0}, 
 	}
 
 	err = INSERT_INTO_TABLES(db, users)
@@ -86,9 +84,9 @@ func main() {
 	}
 
 	cars := [][9]interface{}{
-		{"BMW", "X6", 2017, 3.0, 249, "АКПП", "белый", 4750000, 2},
-		{"Nissan", "Patrol", 2023, 4.0, 275, "АВТОМАТИЧЕСКАЯ", "белый", 8350000, 1},
-		{"Chevrolet", "Camaro", 2019, 2.0, 238, "АКПП", "белый", 4400000, 1},
+		{"Bmw", "X6", 2017, 3.0, 249, "АКПП", "Черный", 4750000, 2},
+		{"Nissan", "Patrol", 2023, 4.0, 275, "АКПП", "Белый", 8350000, 1},
+		{"Chevrolet", "Camaro", 2019, 2.0, 238, "АКПП", "Синий", 4400000, 1},
 	}
 
 	err = INSERT_INTO_CARS(db, cars)

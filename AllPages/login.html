@@ -24,7 +24,17 @@
             text-align: center;
             box-sizing: border-box;
         }
-        h1 {
+        #role-selection {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            width: 380px;
+            text-align: center;
+            box-sizing: border-box;
+            display: none;
+        }
+        h1, h2 {
             color: #333;
             font-size: 26px;
             margin-bottom: 25px;
@@ -63,6 +73,7 @@
             cursor: pointer;
             transition: 0.3s;
             font-weight: bold;
+            margin-bottom: 15px; 
         }
         button:hover {
             background-color: #004799;
@@ -104,6 +115,13 @@
     </div>
 
 
+
+    <div id="role-selection" style="display:none;">
+        <h2>Выберите роль:</h2>
+        <button id="admin-button">Войти как администратор</button>
+        <button id="user-button">Войти как пользователь</button>
+    </div>
+
 </body>
 
 <script>
@@ -129,7 +147,15 @@
             });
 
             if (response.ok) {
-                window.location.href = "/allinf"; 
+                const data = await response.json(); 
+                const idUsers = data.id_users; 
+                const role = data.role;  
+
+                if (role === 1) {
+                    showRoleSelection();
+                } else {
+                    window.location.href = "/allinf";
+                }
             } else {
                 const errorMessage = await response.text();
                 alert(errorMessage); 
@@ -138,6 +164,22 @@
             alert("Ошибка соединения с сервером");
         }
     }
+
+    function showRoleSelection() {
+        document.querySelector('.auth-container').style.display = 'none';
+
+        const selectionDiv = document.getElementById('role-selection');
+        selectionDiv.style.display = 'block';
+
+        document.getElementById('admin-button').addEventListener('click', () => {
+            window.location.href = "/adminpage";
+        });
+
+        document.getElementById('user-button').addEventListener('click', () => {
+            window.location.href = "/allinf";
+        });
+    }
+
 
 </script>
 </html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <style>
+
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #fff, #fff);
+        }
+        .auth-container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+            width: 350px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            text-align: left;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            font-size: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            transition: 0.3s;
+            margin-bottom: 15px;
+            background: #f9f9f9;
+        }
+        input:focus {
+            border-color: #0057b8;
+            background: #fff;
+            box-shadow: 0px 0px 8px rgba(0, 87, 184, 0.3);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #0057b8;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #004799;
+        }
+        p {
+            font-size: 14px;
+            margin-top: 15px;
+        }
+        a {
+            color: #0057b8;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <h1>Регистрация</h1>
+        <form onsubmit="submitForm(event)">
+            <label for="surname">Фамилия:</label>
+            <input type="text" id="surname" name="surname" maxlength="20" required oninput="capitalizeInput(this)">
+            
+            <label for="name">Имя:</label>
+            <input type="text" id="name" name="name" maxlength="20" required oninput="capitalizeInput(this)">
+            
+            <label for="middleName">Отчество:</label>
+            <input type="text" id="middleName" name="middle_name" maxlength="20" required oninput="capitalizeInput(this)">
+            
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" maxlength="40" required>
+            
+            <label for="phone">Номер телефона:</label>
+            <input type="text" id="phone" name="phone_number" 
+                required maxlength="11" pattern="8[0-9]{10}" 
+                title="Номер телефона должен начинаться с 8 и содержать 11 цифр">
+
+            <label for="password">Пароль:</label>
+            <input type="password" id="password" name="password" 
+                required minlength="5" maxlength="25" 
+                title="Пароль должен содержать от 5 до 25 символов">
+            
+            <label for="passwordConfirm">Подтвердите пароль:</label>
+            <input type="password" id="passwordConfirm" name="passwordConfirm" 
+                required minlength="5" maxlength="25" 
+                title="Пароль должен содержать от 5 до 25 символов">
+            
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+        <p><a href="/login">Есть аккаунт? Войти</a></p> 
+    </div>
+
+</body>
+    <script>
+
+    function capitalizeInput(input) {
+        const value = input.value;
+        const filteredValue = value.replace(/[^a-zA-Zа-яА-ЯёЁ]/g, '');
+        const capitalizedValue = filteredValue
+            .charAt(0)
+            .toUpperCase() + filteredValue.slice(1).toLowerCase();
+        input.value = capitalizedValue;
+    }
+
+    async function submitForm(event) {
+        event.preventDefault();
+        const phone = document.getElementById('phone').value;
+        const surname = document.getElementById('surname').value;
+        const name = document.getElementById('name').value;
+        const middleName = document.getElementById('middleName').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const passwordConfirm = document.getElementById('passwordConfirm').value;
+
+        const russianRegex = /^[а-яА-ЯёЁ]+$/;  
+        const englishRegex = /^[a-zA-Z]+$/;  
+
+        if (!surname.match(russianRegex) && !surname.match(englishRegex) || 
+            !name.match(russianRegex) && !name.match(englishRegex) || 
+            !middleName.match(russianRegex) && !middleName.match(englishRegex)) {
+            alert('Фамилия, имя и отчество должны содержать только русские или английские буквы');
+            return;
+        }
+
+        if (password !== passwordConfirm) {
+            alert('Пароли не совпадают');
+            return;
+        }
+
+        if (!email.includes('@')) {
+            alert('Email должен содержать символ "@"');
+            return;
+        }
+
+        const [localPart, emailDomain] = email.split('@');
+
+        if (!emailDomain) {
+            alert('Email должен содержать домен (например, gmail.com)');
+            return;
+        }
+
+        const localPartRegex = /^[a-zA-Z0-9]+$/;
+        if (!localPart.match(localPartRegex)) {
+            alert('Адрес почты должен содержать только английские буквы и цифры');
+            return;
+        }
+
+        const allowedEmailDomains = new Set([ 
+            'gmail.com', 'yahoo.com', 'mail.ru', 'yandex.ru', 'icloud.com',  
+            'outlook.com', 'rambler.ru', 'hotmail.com', 'list.ru', 'bk.ru', 'inbox.ru', 'ya.ru', 'microsoft.com'
+        ]);
+
+        if (!allowedEmailDomains.has(emailDomain)) {
+            alert(`Email должен быть с одним из следующих доменов: ${Array.from(allowedEmailDomains).join(', ')}`);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("phone_number", phone);
+        formData.append("surname", surname);
+        formData.append("name", name);
+        formData.append("middle_name", middleName);
+        formData.append("email", email);
+        formData.append("password", password);
+
+        try {
+            const response = await fetch("/register", {
+                method: "POST",
+                body: formData
+            });
+
+            if (response.ok) {
+                alert("Регистрация успешна!");
+                window.location.href = "/login"; 
+            } else {
+                const errorMessage = await response.text();
+                alert(errorMessage); 
+            }
+        } catch (error) {
+            alert("Ошибка соединения с сервером");
+        }
+    }
+
+
+    </script>
+</html>
