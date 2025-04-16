@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/joho/godotenv"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
@@ -1679,9 +1680,8 @@ func CreateAndStartServer(templatePath, ip, port string) *Server {
     http.HandleFunc("/adminpage", server.HandleAdmin)
     http.HandleFunc("/delete_car",  server.deleteCarHandlerADM)
     http.HandleFunc("/delete_user",  server.deleteUserHandler)
-
     http.HandleFunc("/change_role", server.HandleChangeRole)
-
+    
 	http.HandleFunc("/register", server.HandleRegister)
 
 	http.HandleFunc("/allinf", server.HandleInfo)
@@ -1705,15 +1705,87 @@ func CreateAndStartServer(templatePath, ip, port string) *Server {
 	return server
 }
 
-func main() {
-	connStr := "user=car_dealer_user password=!322@VTB dbname=car_dealer sslmode=disable"
-	var err error
-	db, err = sql.Open("postgres", connStr)
-	if err != nil {
-		log.Fatalf("Не удалось подключиться к базе данных: %v", err)
-	}
+// func main() {
+// 	connStr := "user=car_dealer_user password=!322@VTB dbname=car_dealer sslmode=disable"
+// 	var err error
+// 	db, err = sql.Open("postgres", connStr)
+// 	if err != nil {
+// 		log.Fatalf("Не удалось подключиться к базе данных: %v", err)
+// 	}
 
-	defer db.Close()
-	CreateAndStartServer("AllPages/HomePage.html", "192.168.0.125", "8080")
-    // CreateAndStartServer("HomePage.html", "192.168.229.47", "8080")
+// 	defer db.Close()
+// 	// CreateAndStartServer("AllPages/HomePage.html", "192.168.0.125", "8080")
+//     // CreateAndStartServer("AllPages/HomePage.html", "0.0.0.0", "8080")
+//     CreateAndStartServer("AllPages/HomePage.html", "127.0.0.1", "8080")
+// }
+
+
+func main() {
+    if err := godotenv.Load("settings.env"); err != nil {
+        log.Fatal("Error loading .env file")
+    }
+
+    connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+        os.Getenv("DB_HOST"),  
+        os.Getenv("DB_PORT"),
+        os.Getenv("DB_USER"),
+        os.Getenv("DB_PASSWORD"),
+        os.Getenv("DB_NAME"),
+        os.Getenv("DB_SSLMODE"),
+    )
+
+    var dbErr error
+    db, dbErr = sql.Open("postgres", connStr)
+    if dbErr != nil {
+        log.Fatalf("Не удалось подключиться к базе данных: %v", dbErr)
+    }
+    defer db.Close()
+
+    CreateAndStartServer(
+        "AllPages/HomePage.html",
+        os.Getenv("SERVER_IP"),
+        os.Getenv("SERVER_PORT"),
+    )
 }
+
+// func main() {
+//     debugEnvVars := []string{"DB_HOST", "DB_PORT", "DB_USER", "DB_NAME", "DB_SSLMODE", "SERVER_IP", "SERVER_PORT"}
+//     for _, v := range debugEnvVars {
+//         log.Printf("[DEBUG] %s=%s", v, os.Getenv(v))
+//     }
+
+//     connStr := fmt.Sprintf(
+//         "host=%s port=%s user=%s dbname=%s sslmode=%s",
+//         os.Getenv("DB_HOST"),
+//         os.Getenv("DB_PORT"),
+//         os.Getenv("DB_USER"),
+//         os.Getenv("DB_NAME"),
+//         os.Getenv("DB_SSLMODE"),
+//     )
+//     log.Printf("[DEBUG] Подключение к БД: %s (пароль скрыт)", connStr)
+
+//     connStrWithPassword := fmt.Sprintf("%s password=%s", connStr, os.Getenv("DB_PASSWORD"))
+
+//     db, err := sql.Open("postgres", connStrWithPassword)
+//     if err != nil {
+//         log.Fatalf("[ERROR] Ошибка подключения к БД: %v", err)
+//     }
+//     defer db.Close()
+
+//     if err := db.Ping(); err != nil {
+//         log.Fatalf("[ERROR] Не удалось проверить подключение к БД: %v", err)
+//     }
+//     log.Println("[DEBUG] Успешное подключение к БД")
+
+//     log.Printf("[DEBUG] Запуск сервера на %s:%s", 
+//         os.Getenv("SERVER_IP"), 
+//         os.Getenv("SERVER_PORT"))
+    
+//     CreateAndStartServer(
+//         "AllPages/HomePage.html",
+//         os.Getenv("SERVER_IP"), 
+//         os.Getenv("SERVER_PORT"),
+//     )
+// }
+
+

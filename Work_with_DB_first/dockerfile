@@ -2,7 +2,7 @@ FROM ubuntu:22.04
 
 WORKDIR /app
 
-COPY Work_with_DB_first /app
+COPY . /app
 
 # Устанавливаем переменную окружения для подавления интерактивных запросов
 ENV DEBIAN_FRONTEND=noninteractive
